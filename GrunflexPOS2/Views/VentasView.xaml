@@ -1,0 +1,98 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.VentasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <!-- BOTONES SUPERIORES -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Content="F10 Buscar"
+                    Style="{StaticResource TopFlatButton}"
+                    Click="Buscar_Click"/>
+
+            <Button Grid.Column="1"
+                    Content="F11 Mayoreo"
+                    Style="{StaticResource TopFlatButton}"/>
+
+            <Button Grid.Column="2"
+                    Content="F7 Entradas"
+                    Style="{StaticResource TopFlatButton}"/>
+
+            <Button Grid.Column="3"
+                    Content="F8 Salidas"
+                    Style="{StaticResource TopFlatButton}"/>
+
+            <Button Grid.Column="4"
+                    Content="DEL Borrar Art."
+                    Style="{StaticResource TopFlatButton}"/>
+
+            <Button Grid.Column="5"
+                    Content="Enter Agregar"
+                    Style="{StaticResource TopFlatButton}"/>
+        </Grid>
+
+        <!-- CÓDIGO PRODUCTO -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <TextBlock Text="Código del producto"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="#555"
+                       Margin="2,0,0,6"/>
+
+            <!-- 🔥 AQUÍ ESTÁ LA MODIFICACIÓN -->
+            <TextBox x:Name="CodigoTextBox"
+                     Style="{StaticResource ModernTextBox}"
+                     KeyDown="CodigoTextBox_KeyDown"/>
+        </StackPanel>
+
+        <!-- GRID VENTAS -->
+        <DataGrid Grid.Row="2"
+          x:Name="VentasGrid"
+          AutoGenerateColumns="False"
+          Background="White"
+          KeyDown="VentasGrid_KeyDown"
+          LoadingRow="VentasGrid_LoadingRow">
+
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Código de Barras"
+                                    Binding="{Binding CodigoBarras}"
+                                    Width="160"/>
+                <DataGridTextColumn Header="Producto"
+                                    Binding="{Binding Producto}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Cantidad"
+                                    Binding="{Binding Cantidad}"
+                                    Width="100"/>
+                <DataGridTextColumn Header="Precio"
+                                    Binding="{Binding Precio, StringFormat=C}"
+                                    Width="120"/>
+                <DataGridTextColumn Header="Importe"
+                                    Binding="{Binding Importe, StringFormat=C}"
+                                    Width="130"
+                                    IsReadOnly="True"/>
+                <DataGridTextColumn Header="Existencia"
+                                    Binding="{Binding Existencia}"
+                                    Width="110"/>
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+    </Grid>
+</UserControl>

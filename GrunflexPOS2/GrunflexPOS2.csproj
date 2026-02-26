@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\logo_grunflex.png" />
+    <None Remove="Fonts\ARIAL.TTF" />
+    <None Remove="Fonts\ARIALBD.TTF" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\logo_grunflex.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\ARIAL.TTF">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\ARIALBD.TTF">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ViewModels\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.23" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.23" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.23">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+  </ItemGroup>
+
+</Project>

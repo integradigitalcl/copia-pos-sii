@@ -1,0 +1,85 @@
+﻿<Window x:Class="GrunflexPOS2.Views.ProductosView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Productos"
+        WindowState="Maximized"
+        Background="#F5F5F5">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- PANEL SUPERIOR -->
+        <Border Grid.Row="0" Background="#DFA35A" Padding="6">
+            <WrapPanel>
+                <Button Content="Nuevo" Margin="4"/>
+                <Button Content="Modificar" Margin="4"/>
+                <Button Content="Eliminar" Margin="4"/>
+                <Button Content="Departamentos" Margin="4"/>
+                <Button Content="Ventas por Periodo" Margin="4"/>
+                <Button Content="Promociones" Margin="4"/>
+                <Button Content="Importar" Margin="4"/>
+                <Button Content="Catálogo" Margin="4"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- CONTENIDO -->
+        <ScrollViewer Grid.Row="1">
+            <Border Margin="20" Padding="20" Background="White">
+                <StackPanel Width="420">
+
+                    <TextBlock Text="NUEVO PRODUCTO"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Margin="0,0,0,15"/>
+
+                    <TextBlock Text="Código de barras"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Descripción"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Precio Costo"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Ganancia %"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Precio Venta"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Precio Mayoreo"/>
+                    <TextBox Height="26" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Este producto SI utiliza inventario"
+                              Margin="0,10,0,10"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Margin="0,0,20,0">
+                            <TextBlock Text="Hay"/>
+                            <TextBox Width="80"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,20,0">
+                            <TextBlock Text="Mínimo"/>
+                            <TextBox Width="80"/>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Máximo"/>
+                            <TextBox Width="80"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Content="Guardar Producto"
+                            Margin="0,20,0,0"
+                            Width="160"
+                            Background="#4CAF50"
+                            Foreground="White"/>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</Window>

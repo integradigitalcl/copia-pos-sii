@@ -1,0 +1,181 @@
+﻿<Window x:Class="GrunflexPOS2.Views.VentasDelDiaView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Historial de Ventas"
+        Height="600"
+        Width="1050"
+        WindowStartupLocation="CenterScreen"
+        Background="#F2F2F2">
+
+    <Grid Margin="15">
+
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= CONTENIDO PRINCIPAL ================= -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ================= IZQUIERDA ================= -->
+            <Border Grid.Column="0"
+                    Background="White"
+                    BorderBrush="#C5C5C5"
+                    BorderThickness="1"
+                    Padding="10">
+
+                <StackPanel>
+
+                    <TextBlock Text="HISTORIAL DE VENTAS"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="#1F4E79"
+                               Margin="0,0,0,10"/>
+
+                    <!-- BUSCAR -->
+                    <TextBox x:Name="TxtBuscar"
+                             Height="30"
+                             Margin="0,0,0,10"
+                             GotFocus="TxtBuscar_GotFocus"
+                             LostFocus="TxtBuscar_LostFocus"
+                             TextChanged="TxtBuscar_TextChanged"/>
+
+                    <!-- GRID VENTAS -->
+                    <DataGrid x:Name="VentasGrid"
+                              AutoGenerateColumns="False"
+                              Height="450"
+                              SelectionChanged="VentasGrid_SelectionChanged">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Folio"
+                                                Binding="{Binding NumeroTicket}"
+                                                Width="60"/>
+                            <DataGridTextColumn Header="Arts"
+                                                Binding="{Binding TotalArticulos}"
+                                                Width="50"/>
+                            <DataGridTextColumn Header="Hora"
+                                                Binding="{Binding Hora}"
+                                                Width="90"/>
+                            <DataGridTextColumn Header="Total"
+                                                Binding="{Binding Total, StringFormat=C}"
+                                                Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </StackPanel>
+            </Border>
+
+            <!-- ================= DERECHA ================= -->
+            <Border Grid.Column="1"
+                    Margin="15,0,0,0"
+                    Background="White"
+                    BorderBrush="#C5C5C5"
+                    BorderThickness="1"
+                    Padding="15">
+
+                <StackPanel>
+
+                    <TextBlock x:Name="TxtTituloTicket"
+                               Text="Ticket N°"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Margin="0,0,0,10"/>
+
+                    <TextBlock x:Name="TxtInfoFolio"/>
+                    <TextBlock x:Name="TxtInfoCajero"/>
+                    <TextBlock x:Name="TxtInfoCliente"/>
+                    <TextBlock x:Name="TxtInfoFecha"
+                               Margin="0,0,0,10"/>
+
+                    <!-- DETALLE -->
+                    <DataGrid x:Name="DetalleGrid"
+                              AutoGenerateColumns="False"
+                              Height="300">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Cant."
+                                                Binding="{Binding Cantidad}"
+                                                Width="60"/>
+                            <DataGridTextColumn Header="Descripción"
+                                                Binding="{Binding Producto}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="Importe"
+                                                Binding="{Binding Importe, StringFormat=C}"
+                                                Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel Margin="0,15,0,0">
+
+                        <TextBlock x:Name="TxtMetodoPago"/>
+                        <TextBlock x:Name="TxtTotalVenta"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Margin="0,5,0,10"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Cancelar Venta"
+                                    Width="140"
+                                    Margin="0,0,10,0"
+                                    Click="CancelarVenta_Click"/>
+                            <Button Content="Imprimir copia"
+                                    Width="140"
+                                    Click="ImprimirCopia_Click"/>
+                        </StackPanel>
+
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ================= PANEL INFERIOR ================= -->
+        <Border Grid.Row="1"
+                Background="White"
+                BorderBrush="#C5C5C5"
+                BorderThickness="1"
+                Margin="0,15,0,0"
+                Padding="10">
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center">
+
+                <TextBlock Text="Del día:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"/>
+
+                <DatePicker Width="150"
+                            Margin="0,0,15,0"/>
+
+                <TextBlock Text="Caja:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"/>
+
+                <ComboBox Width="150"
+                          Margin="0,0,15,0"/>
+
+                <TextBlock Text="Cajero:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"/>
+
+                <ComboBox Width="180"
+                          Margin="0,0,15,0"/>
+
+                <CheckBox Content="Ventas a crédito"
+                          VerticalAlignment="Center"
+                          Margin="0,0,20,0"/>
+
+                <Button Content="Cerrar Ventana"
+                        Width="140"
+                        Click="Cerrar_Click"/>
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+</Window>
