@@ -98,10 +98,9 @@ namespace GrunflexPOS2.Views
 
             if (ventana.ShowDialog() == true && ventana.ProductoSeleccionado != null)
             {
-                public Producto? ProductoSeleccionado { get; set; }
+                AgregarProducto(ventana.ProductoSeleccionado);
             }
         }
-
         // ================= AGREGAR PRODUCTO =================
         private void AgregarProducto(Producto producto)
         {

@@ -12,6 +12,9 @@ namespace GrunflexPOS2.Models
 
         public decimal Total { get; set; }
 
+        // 🔥 NUEVO — Soporte multicaja
+        public int NumeroCaja { get; set; } = 1;
+
         public string Cajero { get; set; } = "Administrador";
 
         public string Cliente { get; set; } = "Público en general";

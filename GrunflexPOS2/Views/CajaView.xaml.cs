@@ -15,6 +15,26 @@ namespace GrunflexPOS2.Views
         public CajaView()
         {
             InitializeComponent();
+
+            // 🔥 Se mueve la apertura al evento Loaded (arquitectura correcta WPF)
+            Loaded += CajaView_Loaded;
+        }
+
+        // 🔥 APERTURA PROFESIONAL DE CAJA (AHORA SIN ERROR)
+        private void CajaView_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (!CajaService.CajaAbierta())
+            {
+                var apertura = new AperturaCajaView();
+                apertura.Owner = this;
+
+                if (apertura.ShowDialog() != true)
+                {
+                    Close();
+                    return;
+                }
+            }
+
             CargarVentasInicial();
         }
 
@@ -102,10 +122,8 @@ namespace GrunflexPOS2.Views
 
             if (ventana.ShowDialog() == true)
             {
-                // 🔥 Generar número de ticket
                 int numeroTicket = VentasService.GenerarNumeroTicket();
 
-                // 🔥 Crear objeto venta (CORREGIDO)
                 var nuevaVenta = new Venta
                 {
                     NumeroTicket = numeroTicket,
@@ -114,10 +132,8 @@ namespace GrunflexPOS2.Views
                     Items = _ventasView.ObtenerItemsActuales().ToList()
                 };
 
-                // 🔥 Guardar en memoria
                 VentasService.GuardarVenta(nuevaVenta);
 
-                // 🔥 Generar PDF
                 TicketPdfService.GenerarTicketPDF(nuevaVenta);
 
                 MessageBox.Show(
@@ -126,7 +142,6 @@ namespace GrunflexPOS2.Views
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
 
-                // 🔥 Limpiar venta
                 _ventasView.LimpiarVenta();
 
                 ResumenArticulos.Text = "0";

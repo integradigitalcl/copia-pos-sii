@@ -12,11 +12,10 @@ namespace GrunflexPOS2.Services
         private static int _ultimoNumeroTicket = 0;
         private static List<Venta> _historialVentas = new();
 
+        // 🔥 RUTA EN RED (MULTICAJA REAL)
+        // ⚠️ CAMBIA "SERVIDOR" POR EL NOMBRE REAL DEL PC SERVIDOR O SU IP
         private static readonly string _rutaArchivo =
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "GrunflexPOS",
-                "ventas.json");
+      @"\\DESKTOP-7VI49G5\GrunflexPOS\ventas.json";
 
         static VentasService()
         {
@@ -33,6 +32,13 @@ namespace GrunflexPOS2.Services
         // ================= GUARDAR VENTA =================
         public static void GuardarVenta(Venta venta)
         {
+            // 🔥 MULTICAJA AUTOMÁTICO
+            if (CajaService.SesionActual != null)
+            {
+                venta.NumeroCaja = CajaService.SesionActual.NumeroCaja;
+                venta.Cajero = CajaService.SesionActual.Cajero;
+            }
+
             _historialVentas.Add(venta);
             GuardarEnArchivo();
         }
