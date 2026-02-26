@@ -46,9 +46,9 @@ namespace GrunflexPOS2.Services
         // ================= OBTENER TODAS =================
         public static List<Venta> ObtenerVentas()
         {
+            CargarVentas(); // 🔥 Siempre recargar desde archivo en red
             return _historialVentas;
         }
-
         // ================= ANULAR VENTA =================
         public static void AnularVenta(int numeroTicket)
         {
