@@ -9,38 +9,52 @@ namespace GrunflexPOS2.Services
 {
     public static class VentasService
     {
-        private static int _ultimoNumeroTicket = 0;
         private static List<Venta> _historialVentas = new();
 
         // 🔥 RUTA EN RED (MULTICAJA REAL)
-        // ⚠️ CAMBIA "SERVIDOR" POR EL NOMBRE REAL DEL PC SERVIDOR O SU IP
         private static readonly string _rutaArchivo =
-      @"\\DESKTOP-7VI49G5\GrunflexPOS\ventas.json";
+            @"\\DESKTOP-7VI49G5\GrunflexPOS\ventas.json";
 
         static VentasService()
         {
             CargarVentas();
         }
 
-        // ================= GENERAR NÚMERO DE TICKET =================
+        // ================= GENERAR NÚMERO DE TICKET (SEGURO EN RED) =================
         public static int GenerarNumeroTicket()
         {
-            _ultimoNumeroTicket++;
-            return _ultimoNumeroTicket;
+            lock (_historialVentas)
+            {
+                CargarVentas(); // 🔥 Siempre leer el archivo real en red
+
+                int ultimoNumero = 0;
+
+                if (_historialVentas.Count > 0)
+                {
+                    ultimoNumero = _historialVentas.Max(v => v.NumeroTicket);
+                }
+
+                return ultimoNumero + 1;
+            }
         }
 
         // ================= GUARDAR VENTA =================
         public static void GuardarVenta(Venta venta)
         {
-            // 🔥 MULTICAJA AUTOMÁTICO
-            if (CajaService.SesionActual != null)
+            lock (_historialVentas)
             {
-                venta.NumeroCaja = CajaService.SesionActual.NumeroCaja;
-                venta.Cajero = CajaService.SesionActual.Cajero;
-            }
+                CargarVentas(); // 🔥 Asegura tener la versión más reciente
 
-            _historialVentas.Add(venta);
-            GuardarEnArchivo();
+                // 🔥 MULTICAJA AUTOMÁTICO
+                if (CajaService.SesionActual != null)
+                {
+                    venta.NumeroCaja = CajaService.SesionActual.NumeroCaja;
+                    venta.Cajero = CajaService.SesionActual.Cajero;
+                }
+
+                _historialVentas.Add(venta);
+                GuardarEnArchivo();
+            }
         }
 
         // ================= OBTENER TODAS =================
@@ -49,23 +63,30 @@ namespace GrunflexPOS2.Services
             CargarVentas(); // 🔥 Siempre recargar desde archivo en red
             return _historialVentas;
         }
+
         // ================= ANULAR VENTA =================
         public static void AnularVenta(int numeroTicket)
         {
-            var venta = _historialVentas
-                .FirstOrDefault(v => v.NumeroTicket == numeroTicket);
-
-            if (venta != null && !venta.EstaAnulada)
+            lock (_historialVentas)
             {
-                venta.EstaAnulada = true;
-                venta.FechaAnulacion = DateTime.Now;
-                GuardarEnArchivo();
+                CargarVentas();
+
+                var venta = _historialVentas
+                    .FirstOrDefault(v => v.NumeroTicket == numeroTicket);
+
+                if (venta != null && !venta.EstaAnulada)
+                {
+                    venta.EstaAnulada = true;
+                    venta.FechaAnulacion = DateTime.Now;
+                    GuardarEnArchivo();
+                }
             }
         }
 
         // ================= OBTENER POR TICKET =================
         public static Venta? ObtenerVentaPorTicket(int numeroTicket)
         {
+            CargarVentas();
             return _historialVentas
                 .FirstOrDefault(v => v.NumeroTicket == numeroTicket);
         }
@@ -98,20 +119,16 @@ namespace GrunflexPOS2.Services
             try
             {
                 if (!File.Exists(_rutaArchivo))
+                {
+                    _historialVentas = new List<Venta>();
                     return;
+                }
 
                 var json = File.ReadAllText(_rutaArchivo);
 
                 var ventas = JsonSerializer.Deserialize<List<Venta>>(json);
 
-                if (ventas != null)
-                {
-                    _historialVentas = ventas;
-
-                    if (_historialVentas.Count > 0)
-                        _ultimoNumeroTicket =
-                            _historialVentas.Max(v => v.NumeroTicket);
-                }
+                _historialVentas = ventas ?? new List<Venta>();
             }
             catch
             {
