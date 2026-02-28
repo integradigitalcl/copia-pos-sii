@@ -21,7 +21,12 @@ namespace GrunflexPOS2.Services
         public static void CerrarCaja()
         {
             if (SesionActual != null)
+            {
                 SesionActual.Activa = false;
+
+                // 🔥 Limpieza total de sesión
+                SesionActual = null;
+            }
         }
 
         public static bool CajaAbierta()

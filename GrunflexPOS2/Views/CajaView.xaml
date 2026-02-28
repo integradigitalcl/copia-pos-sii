@@ -22,16 +22,64 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="150"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- TÍTULO -->
                 <TextBlock Text="GRUNFLEX POS"
                            VerticalAlignment="Center"
                            FontSize="22"
                            FontWeight="Bold"
                            Margin="25,0"/>
 
+                <!-- 🔥 NUEVA ZONA DE ESTADO PROFESIONAL -->
                 <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="20,0">
+
+                    <!-- BADGE CAJA -->
+                    <Border x:Name="BadgeCaja"
+                            Background="#16A34A"
+                            CornerRadius="20"
+                            Padding="12,6"
+                            Margin="0,0,10,0">
+
+                        <TextBlock x:Name="IndicadorCajaText"
+                                   Foreground="White"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- BADGE RED -->
+                    <Border x:Name="BadgeRed"
+                            Background="#16A34A"
+                            CornerRadius="20"
+                            Padding="10,6"
+                            Margin="0,0,10,0">
+
+                        <TextBlock x:Name="EstadoRedText"
+                                   Text="Red OK"
+                                   Foreground="White"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- BOTÓN CERRAR CAJA -->
+                    <Button x:Name="BtnCerrarCaja"
+                            Content="Cerrar Caja"
+                            Padding="14,6"
+                            FontSize="12"
+                            Background="#DC2626"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Click="BtnCerrarCaja_Click"/>
+                </StackPanel>
+
+                <!-- BOTONES SISTEMA -->
+                <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right">
 
@@ -101,12 +149,12 @@
                 </StackPanel>
             </Border>
 
-            <!-- ================= AREA CENTRAL DINÁMICA ================= -->
+            <!-- AREA CENTRAL -->
             <ContentControl x:Name="MainContent"
                             Grid.Column="1"
                             Margin="30"/>
 
-            <!-- PANEL DERECHO -->
+            <!-- PANEL DERECHO (INTACTO) -->
             <Border Grid.Column="2"
                     Background="White"
                     Margin="1,0,0,0">
@@ -214,13 +262,11 @@
                                 Click="Cobrar_Click"/>
 
                         <Button Content="Reimprimir Último Ticket"
-        Height="45"
-        Style="{StaticResource ModernButton}"
-        Margin="0,5"
-        Click="ReimprimirUltimo_Click"/>
+                                Height="45"
+                                Style="{StaticResource ModernButton}"
+                                Margin="0,5"
+                                Click="ReimprimirUltimo_Click"/>
 
-
-                        <!-- 🔥 BOTÓN YA CONECTADO -->
                         <Button Content="Ventas del día y Devoluciones"
                                 Height="45"
                                 Style="{StaticResource ModernButton}"

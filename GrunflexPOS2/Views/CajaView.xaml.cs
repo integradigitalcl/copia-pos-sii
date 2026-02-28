@@ -1,7 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 using GrunflexPOS2.Models;
 using GrunflexPOS2.Services;
 
@@ -11,16 +14,14 @@ namespace GrunflexPOS2.Views
     {
         private VentasView? _ventasView;
         private decimal _totalActual = 0;
+        private DispatcherTimer? _redTimer;
 
         public CajaView()
         {
             InitializeComponent();
-
-            // 🔥 Se mueve la apertura al evento Loaded (arquitectura correcta WPF)
             Loaded += CajaView_Loaded;
         }
 
-        // 🔥 APERTURA PROFESIONAL DE CAJA (AHORA SIN ERROR)
         private void CajaView_Loaded(object sender, RoutedEventArgs e)
         {
             if (!CajaService.CajaAbierta())
@@ -36,6 +37,56 @@ namespace GrunflexPOS2.Views
             }
 
             CargarVentasInicial();
+            ActualizarBadgeCaja();
+            IniciarMonitorRed();
+        }
+
+        private void ActualizarBadgeCaja()
+        {
+            var sesion = CajaService.SesionActual;
+            if (sesion == null) return;
+
+            IndicadorCajaText.Text =
+                $"Caja {sesion.NumeroCaja} - {sesion.Cajero} - {sesion.FechaApertura:HH:mm} - ${sesion.MontoInicial:N0}";
+        }
+
+        private void IniciarMonitorRed()
+        {
+            _redTimer = new DispatcherTimer();
+            _redTimer.Interval = TimeSpan.FromSeconds(5);
+            _redTimer.Tick += (s, e) => VerificarRed();
+            _redTimer.Start();
+        }
+
+        private void VerificarRed()
+        {
+            try
+            {
+                bool existe = Directory.Exists(@"\\DESKTOP-7VI49G5\GrunflexPOS");
+
+                if (existe)
+                {
+                    BadgeRed.Background = new SolidColorBrush(Color.FromRgb(22, 163, 74));
+                    EstadoRedText.Text = "Red OK";
+                }
+                else
+                {
+                    BadgeRed.Background = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+                    EstadoRedText.Text = "Sin Red";
+                }
+            }
+            catch
+            {
+                BadgeRed.Background = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+                EstadoRedText.Text = "Sin Red";
+            }
+        }
+
+        private void BtnCerrarCaja_Click(object sender, RoutedEventArgs e)
+        {
+            CajaService.CerrarCaja();
+            BadgeCaja.Background = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+            IndicadorCajaText.Text = "Caja Cerrada";
         }
 
         private void CargarVentasInicial()
@@ -45,7 +96,6 @@ namespace GrunflexPOS2.Views
             MainContent.Content = _ventasView;
         }
 
-        // ================= ATAJOS =================
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.F10 || e.SystemKey == Key.F10)
@@ -61,23 +111,19 @@ namespace GrunflexPOS2.Views
             }
         }
 
-        // ================= ACTUALIZA RESUMEN =================
         private void VentasView_ResumenActualizado(decimal subtotal, int articulos)
         {
             _totalActual = subtotal;
-
             ResumenArticulos.Text = articulos.ToString();
             ResumenSubtotal.Text = subtotal.ToString("C");
             TotalText.Text = subtotal.ToString("C");
         }
 
-        // ================= BOTÓN COBRAR =================
         private void Cobrar_Click(object sender, RoutedEventArgs e)
         {
             AbrirCobro();
         }
 
-        // ================= BOTÓN VENTAS DEL DÍA =================
         private void VentasDelDia_Click(object sender, RoutedEventArgs e)
         {
             var ventana = new VentasDelDiaView();
@@ -85,33 +131,22 @@ namespace GrunflexPOS2.Views
             ventana.ShowDialog();
         }
 
-        // ================= REIMPRIMIR ÚLTIMO =================
         private void ReimprimirUltimo_Click(object sender, RoutedEventArgs e)
         {
-            var ventas = VentasService.ObtenerVentas();
+            var ventas = App.VentaService.ObtenerVentas();
 
             if (ventas.Count == 0)
             {
-                MessageBox.Show(
-                    "No hay ventas para reimprimir.",
-                    "Aviso",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("No hay ventas para reimprimir.");
                 return;
             }
 
             var ultimaVenta = ventas.Last();
-
             TicketPdfService.GenerarTicketPDF(ultimaVenta);
 
-            MessageBox.Show(
-                $"Ticket N° {ultimaVenta.NumeroTicket} reimpreso correctamente.",
-                "Reimpresión exitosa",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            MessageBox.Show($"Ticket N° {ultimaVenta.NumeroTicket} reimpreso correctamente.");
         }
 
-        // ================= LÓGICA DE COBRO =================
         private void AbrirCobro()
         {
             if (_ventasView == null || _totalActual <= 0)
@@ -122,7 +157,7 @@ namespace GrunflexPOS2.Views
 
             if (ventana.ShowDialog() == true)
             {
-                int numeroTicket = VentasService.GenerarNumeroTicket();
+                int numeroTicket = App.VentaService.GenerarNumeroTicket();
 
                 var nuevaVenta = new Venta
                 {
@@ -132,26 +167,16 @@ namespace GrunflexPOS2.Views
                     Items = _ventasView.ObtenerItemsActuales().ToList()
                 };
 
-                VentasService.GuardarVenta(nuevaVenta);
-
+                App.VentaService.GuardarVenta(nuevaVenta);
                 TicketPdfService.GenerarTicketPDF(nuevaVenta);
 
-                MessageBox.Show(
-                    $"Venta guardada correctamente.\nTicket N° {numeroTicket}",
-                    "Venta exitosa",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
                 _ventasView.LimpiarVenta();
-
-                ResumenArticulos.Text = "0";
-                ResumenSubtotal.Text = "$0";
-                TotalText.Text = "$0";
                 _totalActual = 0;
             }
         }
 
-        // ================= BOTONES SUPERIORES =================
+        // ===== MÉTODOS NECESARIOS PARA EL XAML =====
+
         private void Minimizar_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
@@ -174,16 +199,39 @@ namespace GrunflexPOS2.Views
             DragMove();
         }
 
-        // ================= MENÚ IZQUIERDO =================
-        private void Ventas_Click(object sender, RoutedEventArgs e)
-        {
-            CargarVentasInicial();
-        }
-
+        private void Ventas_Click(object sender, RoutedEventArgs e) => CargarVentasInicial();
         private void Productos_Click(object sender, RoutedEventArgs e) { }
         private void Inventario_Click(object sender, RoutedEventArgs e) { }
         private void Reportes_Click(object sender, RoutedEventArgs e) { }
-        private void Corte_Click(object sender, RoutedEventArgs e) { }
+
+        // 🔥 AQUÍ ESTÁ EL CORTE CONECTADO
+        private void Corte_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CajaService.CajaAbierta())
+            {
+                MessageBox.Show("No hay una caja abierta.");
+                return;
+            }
+
+            var sesion = CajaService.SesionActual;
+            if (sesion == null)
+                return;
+
+            var diaService = new DiaComercialService(new TimeSpan(8, 0, 0));
+
+            var corteService = new CorteService(
+                diaService,
+                App.VentaService);
+
+            var resumen = corteService.GenerarResumen(
+          sesion.NumeroCaja.ToString(),
+          sesion.Cajero,
+          sesion.MontoInicial);
+            MainContent.Content = new CorteView(resumen);
+        }
+
+        private void Compras_Click(object sender, RoutedEventArgs e) { }
+        private void Configuracion_Click(object sender, RoutedEventArgs e) { }
 
         private void Web_Click(object sender, RoutedEventArgs e)
         {
@@ -191,8 +239,5 @@ namespace GrunflexPOS2.Views
             ventana.Owner = this;
             ventana.ShowDialog();
         }
-
-        private void Compras_Click(object sender, RoutedEventArgs e) { }
-        private void Configuracion_Click(object sender, RoutedEventArgs e) { }
     }
 }

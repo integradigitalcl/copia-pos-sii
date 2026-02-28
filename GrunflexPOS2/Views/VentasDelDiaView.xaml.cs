@@ -16,7 +16,7 @@ namespace GrunflexPOS2.Views
         {
             InitializeComponent();
 
-            _ventas = new ObservableCollection<Venta>(VentasService.ObtenerVentas());
+            _ventas = new ObservableCollection<Venta>(App.VentaService.ObtenerVentas());
             VentasGrid.ItemsSource = _ventas;
 
             // Inicializa placeholder manual
@@ -81,10 +81,8 @@ namespace GrunflexPOS2.Views
                 TxtInfoCajero.Text = $"Cajero: {venta.Cajero}";
                 TxtInfoCliente.Text = $"Cliente: {venta.Cliente}";
                 TxtInfoFecha.Text = $"Fecha: {venta.Fecha:dd/MM/yyyy HH:mm}";
-
                 TxtMetodoPago.Text = $"Pago con: {venta.MetodoPago}";
                 TxtTotalVenta.Text = $"Total: {venta.Total:C}";
-
                 DetalleGrid.ItemsSource = venta.Items;
             }
         }
@@ -102,7 +100,7 @@ namespace GrunflexPOS2.Views
 
                 if (confirm == MessageBoxResult.Yes)
                 {
-                    VentasService.AnularVenta(venta.NumeroTicket);
+                    App.VentaService.AnularVenta(venta.NumeroTicket);
 
                     _ventas.Remove(venta);
 

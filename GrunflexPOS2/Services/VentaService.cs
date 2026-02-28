@@ -7,21 +7,21 @@ using GrunflexPOS2.Models;
 
 namespace GrunflexPOS2.Services
 {
-    public static class VentasService
+    public class VentaService
     {
-        private static List<Venta> _historialVentas = new();
+        private List<Venta> _historialVentas = new();
 
         // 🔥 RUTA EN RED (MULTICAJA REAL)
-        private static readonly string _rutaArchivo =
+        private readonly string _rutaArchivo =
             @"\\DESKTOP-7VI49G5\GrunflexPOS\ventas.json";
 
-        static VentasService()
+        public VentaService()
         {
             CargarVentas();
         }
 
         // ================= GENERAR NÚMERO DE TICKET (SEGURO EN RED) =================
-        public static int GenerarNumeroTicket()
+        public int GenerarNumeroTicket()
         {
             lock (_historialVentas)
             {
@@ -39,7 +39,7 @@ namespace GrunflexPOS2.Services
         }
 
         // ================= GUARDAR VENTA =================
-        public static void GuardarVenta(Venta venta)
+        public void GuardarVenta(Venta venta)
         {
             lock (_historialVentas)
             {
@@ -58,14 +58,14 @@ namespace GrunflexPOS2.Services
         }
 
         // ================= OBTENER TODAS =================
-        public static List<Venta> ObtenerVentas()
+        public List<Venta> ObtenerVentas()
         {
             CargarVentas(); // 🔥 Siempre recargar desde archivo en red
             return _historialVentas;
         }
 
         // ================= ANULAR VENTA =================
-        public static void AnularVenta(int numeroTicket)
+        public void AnularVenta(int numeroTicket)
         {
             lock (_historialVentas)
             {
@@ -84,7 +84,7 @@ namespace GrunflexPOS2.Services
         }
 
         // ================= OBTENER POR TICKET =================
-        public static Venta? ObtenerVentaPorTicket(int numeroTicket)
+        public Venta? ObtenerVentaPorTicket(int numeroTicket)
         {
             CargarVentas();
             return _historialVentas
@@ -92,7 +92,7 @@ namespace GrunflexPOS2.Services
         }
 
         // ================= GUARDAR EN JSON =================
-        private static void GuardarEnArchivo()
+        private void GuardarEnArchivo()
         {
             try
             {
@@ -114,7 +114,7 @@ namespace GrunflexPOS2.Services
         }
 
         // ================= CARGAR JSON =================
-        private static void CargarVentas()
+        private void CargarVentas()
         {
             try
             {
