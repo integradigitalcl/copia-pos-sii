@@ -15,6 +15,9 @@ namespace GrunflexPOS2.Models
         // 🔥 NUEVO — Soporte multicaja
         public int NumeroCaja { get; set; } = 1;
 
+        // 🔥 NUEVO — Identificador único de caja (PostgreSQL multicaja)
+        public Guid CajaId { get; set; }
+
         public string Cajero { get; set; } = "Administrador";
 
         public string Cliente { get; set; } = "Público en general";

@@ -6,6 +6,10 @@
 
         public string Nombre { get; set; } = string.Empty;
 
+        // 🔥 costo del producto
+        public decimal Costo { get; set; }
+
+        // 🔥 precio de venta
         public decimal Precio { get; set; }
 
         public int Stock { get; set; }

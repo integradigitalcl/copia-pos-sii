@@ -3,6 +3,7 @@ using System;
 using GrunflexPOS2.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GrunflexPOS2.Migrations
 {
     [DbContext(typeof(GrunflexDbContext))]
-    partial class GrunflexDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304191144_CrearTablaVentas")]
+    partial class CrearTablaVentas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,32 +49,6 @@ namespace GrunflexPOS2.Migrations
                     b.HasIndex("EmpresaId");
 
                     b.ToTable("Cajas");
-                });
-
-            modelBuilder.Entity("GrunflexPOS2.Models.Entities.DetalleVenta", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Precio")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Producto")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("VentaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VentaId");
-
-                    b.ToTable("DetalleVentas");
                 });
 
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.Empresa", b =>
@@ -147,25 +124,9 @@ namespace GrunflexPOS2.Migrations
                     b.Navigation("Empresa");
                 });
 
-            modelBuilder.Entity("GrunflexPOS2.Models.Entities.DetalleVenta", b =>
-                {
-                    b.HasOne("GrunflexPOS2.Models.Entities.VentaEntity", "Venta")
-                        .WithMany("Items")
-                        .HasForeignKey("VentaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Venta");
-                });
-
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.Empresa", b =>
                 {
                     b.Navigation("Cajas");
-                });
-
-            modelBuilder.Entity("GrunflexPOS2.Models.Entities.VentaEntity", b =>
-                {
-                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

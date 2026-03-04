@@ -13,6 +13,7 @@ namespace GrunflexPOS2
     {
         public static VentaService VentaService { get; private set; } = null!;
         public static GrunflexDbContext DbContext { get; private set; } = null!;
+        public static Guid CajaActualId { get; private set; }
 
         public App()
         {
@@ -21,8 +22,17 @@ namespace GrunflexPOS2
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            var config = AppConfig.Cargar();
+
+            var connectionString =
+                $"Host={config.Servidor};" +
+                $"Port={config.Puerto};" +
+                $"Database={config.BaseDatos};" +
+                $"Username={config.Usuario};" +
+                $"Password={config.Password}";
+
             var options = new DbContextOptionsBuilder<GrunflexDbContext>()
-                .UseNpgsql("Host=192.168.100.17;Port=5432;Database=grunflexpos2;Username=postgres;Password=2106")
+                .UseNpgsql(connectionString)
                 .Options;
 
             DbContext = new GrunflexDbContext(options);
@@ -31,8 +41,9 @@ namespace GrunflexPOS2
             {
                 DbContext.Database.CanConnect();
 
-                // 🔥 INICIALIZAR EMPRESA Y CAJA SI NO EXISTEN
                 InicializarSistema();
+
+                ConfigurarCaja(config);
             }
             catch (Exception ex)
             {
@@ -65,6 +76,19 @@ namespace GrunflexPOS2
                 DbContext.Cajas.Add(caja);
                 DbContext.SaveChanges();
             }
+        }
+
+        private void ConfigurarCaja(AppConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.CajaId))
+            {
+                var primeraCaja = DbContext.Cajas.First();
+
+                config.CajaId = primeraCaja.Id.ToString();
+                config.Guardar();
+            }
+
+            CajaActualId = Guid.Parse(config.CajaId);
         }
     }
 }

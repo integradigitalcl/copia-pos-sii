@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using GrunflexPOS2.Models;
 using GrunflexPOS2.Services;
+using GrunflexPOS2.Views;
 
 namespace GrunflexPOS2.Views
 {
@@ -162,7 +163,7 @@ namespace GrunflexPOS2.Views
                 var nuevaVenta = new Venta
                 {
                     NumeroTicket = numeroTicket,
-                    Fecha = DateTime.Now,
+                    Fecha = DateTime.UtcNow, // 🔥 CORREGIDO PARA POSTGRESQL
                     Total = _totalActual,
                     Items = _ventasView.ObtenerItemsActuales().ToList()
                 };
@@ -174,8 +175,6 @@ namespace GrunflexPOS2.Views
                 _totalActual = 0;
             }
         }
-
-        // ===== MÉTODOS NECESARIOS PARA EL XAML =====
 
         private void Minimizar_Click(object sender, RoutedEventArgs e)
         {
@@ -202,9 +201,12 @@ namespace GrunflexPOS2.Views
         private void Ventas_Click(object sender, RoutedEventArgs e) => CargarVentasInicial();
         private void Productos_Click(object sender, RoutedEventArgs e) { }
         private void Inventario_Click(object sender, RoutedEventArgs e) { }
-        private void Reportes_Click(object sender, RoutedEventArgs e) { }
 
-        // 🔥 AQUÍ ESTÁ EL CORTE CONECTADO
+        private void Reportes_Click(object sender, RoutedEventArgs e)
+        {
+            MainContent.Content = new ReportesView();
+        }
+
         private void Corte_Click(object sender, RoutedEventArgs e)
         {
             if (!CajaService.CajaAbierta())
@@ -224,9 +226,10 @@ namespace GrunflexPOS2.Views
                 App.VentaService);
 
             var resumen = corteService.GenerarResumen(
-          sesion.NumeroCaja.ToString(),
-          sesion.Cajero,
-          sesion.MontoInicial);
+                sesion.NumeroCaja.ToString(),
+                sesion.Cajero,
+                sesion.MontoInicial);
+
             MainContent.Content = new CorteView(resumen);
         }
 

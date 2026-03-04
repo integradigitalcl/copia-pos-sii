@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using GrunflexPOS2.Models;
+using GrunflexPOS2.Models.Entities;
 
 namespace GrunflexPOS2.Services
 {
@@ -25,7 +26,7 @@ namespace GrunflexPOS2.Services
         {
             lock (_historialVentas)
             {
-                CargarVentas(); // 🔥 Siempre leer el archivo real en red
+                CargarVentas();
 
                 int ultimoNumero = 0;
 
@@ -43,7 +44,7 @@ namespace GrunflexPOS2.Services
         {
             lock (_historialVentas)
             {
-                CargarVentas(); // 🔥 Asegura tener la versión más reciente
+                CargarVentas();
 
                 // 🔥 MULTICAJA AUTOMÁTICO
                 if (CajaService.SesionActual != null)
@@ -52,15 +53,44 @@ namespace GrunflexPOS2.Services
                     venta.Cajero = CajaService.SesionActual.Cajero;
                 }
 
+                // 🔥 Asociar venta a la caja actual
+                venta.CajaId = App.CajaActualId;
+
+                // ================= GUARDAR JSON (SISTEMA ACTUAL) =================
                 _historialVentas.Add(venta);
                 GuardarEnArchivo();
+
+                // ================= GUARDAR EN POSTGRESQL =================
+                try
+                {
+                    var ventaDb = new VentaEntity
+                    {
+                        NumeroTicket = venta.NumeroTicket,
+                        Fecha = venta.Fecha,
+                        Total = venta.Total,
+                        NumeroCaja = venta.NumeroCaja,
+                        CajaId = venta.CajaId,
+                        Cajero = venta.Cajero,
+                        Cliente = venta.Cliente,
+                        MetodoPago = venta.MetodoPago,
+                        EstaAnulada = venta.EstaAnulada,
+                        FechaAnulacion = venta.FechaAnulacion
+                    };
+
+                    App.DbContext.Ventas.Add(ventaDb);
+                    App.DbContext.SaveChanges();
+                }
+                catch
+                {
+                    // 🔥 Si falla la base de datos el POS sigue funcionando
+                }
             }
         }
 
         // ================= OBTENER TODAS =================
         public List<Venta> ObtenerVentas()
         {
-            CargarVentas(); // 🔥 Siempre recargar desde archivo en red
+            CargarVentas();
             return _historialVentas;
         }
 
@@ -78,7 +108,26 @@ namespace GrunflexPOS2.Services
                 {
                     venta.EstaAnulada = true;
                     venta.FechaAnulacion = DateTime.Now;
+
                     GuardarEnArchivo();
+
+                    try
+                    {
+                        var ventaDb = App.DbContext.Ventas
+                            .FirstOrDefault(v => v.NumeroTicket == numeroTicket);
+
+                        if (ventaDb != null)
+                        {
+                            ventaDb.EstaAnulada = true;
+                            ventaDb.FechaAnulacion = venta.FechaAnulacion;
+
+                            App.DbContext.SaveChanges();
+                        }
+                    }
+                    catch
+                    {
+                        // No romper POS
+                    }
                 }
             }
         }
@@ -87,6 +136,7 @@ namespace GrunflexPOS2.Services
         public Venta? ObtenerVentaPorTicket(int numeroTicket)
         {
             CargarVentas();
+
             return _historialVentas
                 .FirstOrDefault(v => v.NumeroTicket == numeroTicket);
         }
