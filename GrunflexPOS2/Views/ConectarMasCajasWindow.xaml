@@ -1,0 +1,218 @@
+<Window x:Class="GrunflexPOS2.Views.ConectarMasCajasWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Conectar más cajas"
+        Height="680"
+        MinHeight="520"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#F5F6F8">
+    <!-- Barra inferior fija: sin esto, en 640px los botones quedan fuera de vista y parece que "no pasa nada" al elegir caja. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="0"
+                      VerticalScrollBarVisibility="Auto"
+                      Padding="16,16,16,8">
+        <StackPanel>
+            <TextBlock Text="Registrar una caja nueva"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#0F172A"
+                       Margin="0,0,0,8"/>
+            <TextBlock TextWrapping="Wrap"
+                       Foreground="#64748B"
+                       FontSize="12"
+                       Margin="0,0,0,12"
+                       Text="Al crear la caja se genera la plantilla, se guarda en el Escritorio (y junto al .exe si la carpeta es escribible), se copia al portapapeles y se abre el Explorador en el archivo. En el otro PC, el POS aplica solo al primer arranque si el .json está en el Escritorio o junto al ejecutable."/>
+            <CheckBox x:Name="ChkUsarIpLan"
+                      Content="Usar la IP de red de esta PC en la plantilla (reemplaza localhost / 127.0.0.1 para el otro equipo)"
+                      IsChecked="True"
+                      Margin="0,0,0,12"
+                      Foreground="#334155"/>
+            <CheckBox x:Name="ChkEjecutarScriptRed"
+                      Content="Después de crear, solicitar ejecutar el script de recurso compartido y firewall (administrador, solo en este servidor)"
+                      IsChecked="True"
+                      Margin="0,0,0,12"
+                      Foreground="#334155"/>
+
+            <TextBlock Text="Servidor al que se conectará el otro PC (API + base compartida)"
+                       FontWeight="SemiBold"
+                       Foreground="#0F172A"
+                       Margin="0,0,0,4"/>
+            <TextBlock TextWrapping="Wrap"
+                       FontSize="11"
+                       Foreground="#64748B"
+                       Margin="0,0,0,8"
+                       Text="Solo aparecen equipos con la API Grunflex en marcha (normalmente este servidor). El PC nuevo no se lista aquí: elija este servidor o escriba su IP o nombre. El nombre de la caja (abajo) identifica el terminal en el POS."/>
+            <TextBlock x:Name="TxtDescubrimiento"
+                       TextWrapping="Wrap"
+                       FontSize="12"
+                       Foreground="#64748B"
+                       Margin="0,0,0,8"/>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="BtnBuscarCajas"
+                        Grid.Column="1"
+                        Content="Volver a buscar"
+                        Padding="12,6"
+                        Click="BtnBuscarCajas_Click"/>
+            </Grid>
+            <Border Background="White"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="0"
+                    Margin="0,0,0,14"
+                    MaxHeight="200">
+                <ListBox x:Name="ListaCajasPrincipales"
+                         BorderThickness="0"
+                         SelectionChanged="ListaCajasPrincipales_SelectionChanged"
+                         MouseDoubleClick="ListaCajasPrincipales_MouseDoubleClick">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="8,6">
+                                <TextBlock Text="{Binding Server}" FontWeight="SemiBold" FontSize="13" Foreground="#0F172A"/>
+                                <TextBlock FontSize="11" Foreground="#64748B">
+                                    <Run Text="IP: "/><Run Text="{Binding Ip}"/>
+                                    <Run Text="  ·  Versión "/><Run Text="{Binding Version}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+            <TextBlock Text="IP o nombre del servidor (opcional: si la lista no sirve o no hay fila seleccionada)"
+                       FontSize="12"
+                       Foreground="#334155"
+                       Margin="0,8,0,4"/>
+            <TextBox x:Name="TxtManualServidor"
+                     Height="30"
+                     Margin="0,0,0,10"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     ToolTip="Ejemplo: 192.168.1.10 o DESKTOP-XXXX. Tiene prioridad si escribe aquí y deja la lista sin selección."/>
+            <TextBlock x:Name="TxtIpPlantilla"
+                       TextWrapping="Wrap"
+                       FontSize="12"
+                       FontWeight="SemiBold"
+                       Foreground="#1D4ED8"
+                       Margin="0,0,0,4"/>
+            <TextBlock x:Name="TxtHintAccion"
+                       TextWrapping="Wrap"
+                       FontSize="12"
+                       Foreground="#0F172A"
+                       Margin="0,0,0,8"/>
+            <Button x:Name="BtnConectarCaja"
+                    Content="Conectar caja"
+                    MinHeight="40"
+                    Padding="16,8"
+                    Margin="0,0,0,12"
+                    FontWeight="SemiBold"
+                    FontSize="13"
+                    IsEnabled="False"
+                    Click="BtnConectarCaja_Click"
+                    ToolTip="Registra la caja y prepara la plantilla (Explorador, portapapeles, script opcional). El host del servidor: manual válido, si no fila elegida, si no IP LAN de esta PC."/>
+            <TextBlock TextWrapping="Wrap"
+                       FontSize="11"
+                       Foreground="#94A3B8"
+                       Margin="0,0,0,16"
+                       Text="«Conectar caja» usa empresa y nombre actuales. «Crear y preparar otro PC» es el mismo flujo sin exigir «Usar IP de red» si la desmarcó."/>
+
+            <TextBlock Text="Empresa" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <ComboBox x:Name="CmbEmpresa"
+                      DisplayMemberPath="Nombre"
+                      SelectedValuePath="Id"
+                      Height="32"
+                      Margin="0,0,0,12"/>
+
+            <TextBlock Text="Nombre de la caja" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtNombreCaja"
+                     Height="32"
+                     Margin="0,0,0,12"/>
+
+            <TextBlock Text="Cadena de conexión central (se rellena sola; edítala solo si usas otra ruta compartida)"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,4"
+                       TextWrapping="Wrap"/>
+            <TextBox x:Name="TxtCadenaPrueba"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     MinHeight="72"
+                     Margin="0,0,0,8"
+                     FontFamily="Consolas"
+                     FontSize="11"/>
+            <TextBlock Text="Vacía = probar la conexión que ya usa este POS."
+                       Foreground="#94A3B8"
+                       FontSize="11"
+                       Margin="0,0,0,12"/>
+
+            <TextBlock x:Name="TxtEstado"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"
+                       Foreground="#334155"
+                       FontSize="12"/>
+
+            <TextBlock Text="Plantilla para appsettings.local.json (otro PC)"
+                       FontWeight="SemiBold"
+                       Margin="0,8,0,4"/>
+            <TextBox x:Name="TxtPlantilla"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     MinHeight="160"
+                     FontFamily="Consolas"
+                     FontSize="11"
+                     Background="White"
+                     BorderBrush="#E2E8F0"/>
+        </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1"
+                Background="#F1F5F9"
+                BorderBrush="#E2E8F0"
+                BorderThickness="0,1,0,0"
+                Padding="12,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button x:Name="BtnProbar"
+                            Content="Probar conexión"
+                            Width="140"
+                            Height="34"
+                            Margin="0,0,8,0"
+                            Click="BtnProbar_Click"/>
+                    <Button x:Name="BtnCrear"
+                            Content="Crear y preparar otro PC"
+                            MinWidth="200"
+                            Height="34"
+                            Margin="0,0,8,0"
+                            Click="BtnCrear_Click"/>
+                    <Button x:Name="BtnCopiar"
+                            Content="Copiar plantilla"
+                            Width="120"
+                            Height="34"
+                            IsEnabled="False"
+                            Click="BtnCopiar_Click"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cerrar"
+                            Width="100"
+                            Height="34"
+                            IsCancel="True"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,211 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.CajasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="MinWidth" Value="160"/>
+        </Style>
+        <Style x:Key="CajaActionButton" TargetType="Button" BasedOn="{StaticResource MiniTopButton}">
+            <Setter Property="Margin" Value="0,0,10,10"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- BARRA SUPERIOR -->
+        <Border Grid.Row="0" Background="{StaticResource PrimaryGradientBrush}" MinHeight="40" CornerRadius="3">
+            <TextBlock Text="CONFIGURACIÓN"
+                       Foreground="White"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Margin="10,8"/>
+        </Border>
+
+        <Button Grid.Row="1"
+                Content="🏠 Mostrar todas las opciones"
+                Margin="0,10,0,20"
+                Width="220"
+                Height="30"
+                Visibility="Collapsed"/>
+
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto">
+            <Grid MinWidth="520">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left"
+                               Text="ADMINISTRACIÓN DE CAJAS"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
+                    <Button x:Name="BtnActualizarConexion"
+                            DockPanel.Dock="Right"
+                            Content="🔄  Actualizar conexión"
+                            MinWidth="180"
+                            ToolTip="Reaplica configuración multicaja, verifica la API y reinicia el POS."
+                            VerticalAlignment="Center"
+                            Click="BtnActualizarConexion_Click"
+                            Style="{StaticResource MiniTopButton}"/>
+                </DockPanel>
+
+                <TextBlock Grid.Row="1"
+                           Text="A continuación se muestran las cajas que has dado de alta en tu negocio:"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,16"/>
+
+                <Border x:Name="PanelProgresoConexion"
+                        Grid.Row="2"
+                        Visibility="Collapsed"
+                        Background="#EFF6FF"
+                        BorderBrush="#3B82F6"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock x:Name="TxtProgresoPaso"
+                                   Text="Preparando actualización..."
+                                   FontWeight="SemiBold"
+                                   Foreground="#1E3A8A"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"/>
+                        <ProgressBar x:Name="BarraProgresoConexion"
+                                     Height="14"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     Value="0"
+                                     IsIndeterminate="False"
+                                     Foreground="#2563EB"
+                                     Background="#DBEAFE"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="PanelEstadoCliente"
+                        Grid.Row="3"
+                        Visibility="Visible"
+                        Background="#F0FDF4"
+                        BorderBrush="#22C55E"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Conexión de esta caja (tiempo real)"
+                                   FontWeight="SemiBold"
+                                   Foreground="#14532D"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock x:Name="TxtEstadoCliente"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Foreground="#166534"
+                                   Text="—"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="PanelEstadoServidor"
+                        Grid.Row="3"
+                        Visibility="Collapsed"
+                        Background="#EFF6FF"
+                        BorderBrush="#3B82F6"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Equipos conectados a este servidor (API / terminales)"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1E3A8A"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock x:Name="TxtEstadoServidorResumen"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Foreground="#1E40AF"
+                                   Margin="0,0,0,8"
+                                   Text="—"/>
+                        <ListBox x:Name="ListaTerminales"
+                                 MinHeight="100"
+                                 MaxHeight="220"
+                                 FontSize="12"
+                                 BorderBrush="#BFDBFE"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="4" MinHeight="260">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="240" MinWidth="180"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*" MinWidth="280"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ListBox x:Name="ListaCajas"
+                             Grid.Column="0"
+                             VerticalAlignment="Stretch"
+                             MinHeight="240"
+                             SelectionChanged="ListaCajas_SelectionChanged"
+                             DisplayMemberPath="NombreMostrar"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+
+                    <Border Grid.Column="2"
+                            BorderBrush="{StaticResource PanelBorderBrush}"
+                            BorderThickness="1"
+                            Padding="12"
+                            Background="White"
+                            CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtNombreCaja"
+                                       Text="Seleccione una caja"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TxtUltimoAcceso"
+                                       Text="Último acceso el: --"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,16"/>
+
+                            <WrapPanel Orientation="Horizontal">
+                                <Button x:Name="BtnCambiarNombre"
+                                        Content="Cambiar de nombre ..."
+                                        Style="{StaticResource CajaActionButton}"
+                                        Click="BtnCambiarNombre_Click"/>
+                                <Button x:Name="BtnEliminarCaja"
+                                        Content="Eliminar Caja ..."
+                                        Style="{StaticResource CajaActionButton}"
+                                        Click="BtnEliminarCaja_Click"/>
+                                <Button x:Name="BtnConectarMasCajas"
+                                        Content="Conectar mas cajas"
+                                        Style="{StaticResource CajaActionButton}"
+                                        Click="BtnConectarMasCajas_Click"/>
+                                <Button x:Name="BtnConectarServidor"
+                                        Content="Conectar a caja principal"
+                                        Style="{StaticResource CajaActionButton}"
+                                        Click="BtnConectarServidor_Click"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

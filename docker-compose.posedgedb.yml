@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  posedgedb:
+    image: postgres:16
+    container_name: posedgedb
+    environment:
+      POSTGRES_DB: posedgedb
+      POSTGRES_USER: posedge
+      POSTGRES_PASSWORD: posedge
+    ports:
+      - "55432:5432"
+    volumes:
+      - posedgedb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U posedge -d posedgedb"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  posedgedb-data:
+

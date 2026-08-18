@@ -4,7 +4,6 @@ using GrunflexPOS2.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -16,30 +15,26 @@ namespace GrunflexPOS2.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.23")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.23");
 
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.Caja", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Activa")
-                        .HasColumnType("boolean");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("EmpresaId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -48,24 +43,118 @@ namespace GrunflexPOS2.Migrations
                     b.ToTable("Cajas");
                 });
 
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.CajaSesion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Abierta")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("CajaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cajero")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Diferencia")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaApertura")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaCierre")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MontoApertura")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("MontoCierre")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NumeroCaja")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalIngresos")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalRetiros")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalVentas")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UsuarioAperturaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UsuarioCierreId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CajaId");
+
+                    b.ToTable("CajaSesiones");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Categoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categorias");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Configuracion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Clave")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Valor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Configuraciones");
+                });
+
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.DetalleVenta", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Cantidad")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CodigoBarras")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Precio")
-                        .HasColumnType("numeric");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Producto")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("VentaId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -78,58 +167,183 @@ namespace GrunflexPOS2.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Empresas");
                 });
 
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.MovimientoCaja", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CajaSesionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CajaSesionId");
+
+                    b.ToTable("MovimientosCaja");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Producto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("CategoriaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CodigoBarras")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Costo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Departamento")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("InvMaximo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("InvMinimo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PrecioMayoreo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TipoVenta")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("CodigoBarras")
+                        .IsUnique();
+
+                    b.ToTable("Productos");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Usuario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Usuarios");
+                });
+
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.VentaEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("CajaId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CajaSesionId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Cajero")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Cliente")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EsConsumoPersonal")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("EstaAnulada")
-                        .HasColumnType("boolean");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("FechaAnulacion")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("MetodoPago")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("NumeroCaja")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("NumeroTicket")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("numeric");
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -147,6 +361,15 @@ namespace GrunflexPOS2.Migrations
                     b.Navigation("Empresa");
                 });
 
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.CajaSesion", b =>
+                {
+                    b.HasOne("GrunflexPOS2.Models.Entities.Caja", null)
+                        .WithMany()
+                        .HasForeignKey("CajaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.DetalleVenta", b =>
                 {
                     b.HasOne("GrunflexPOS2.Models.Entities.VentaEntity", "Venta")
@@ -156,6 +379,30 @@ namespace GrunflexPOS2.Migrations
                         .IsRequired();
 
                     b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.MovimientoCaja", b =>
+                {
+                    b.HasOne("GrunflexPOS2.Models.Entities.CajaSesion", null)
+                        .WithMany()
+                        .HasForeignKey("CajaSesionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Producto", b =>
+                {
+                    b.HasOne("GrunflexPOS2.Models.Entities.Categoria", "Categoria")
+                        .WithMany("Productos")
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("GrunflexPOS2.Models.Entities.Categoria", b =>
+                {
+                    b.Navigation("Productos");
                 });
 
             modelBuilder.Entity("GrunflexPOS2.Models.Entities.Empresa", b =>

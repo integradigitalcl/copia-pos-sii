@@ -1,0 +1,68 @@
+<UserControl x:Class="GrunflexPOS2.Views.RespaldoNubeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer Background="#F5F6F8" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+
+            <TextBlock Text="RESPALDOS EN LA NUBE"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock Text="Archivos subidos a la API para este ActivationId. Eliminar aquí solo borra la copia en el servidor."
+                       Foreground="#64748B"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Button x:Name="BtnActualizarLista"
+                        Content="Actualizar lista"
+                        Width="160"
+                        Height="36"
+                        Margin="0,0,12,0"
+                        Style="{StaticResource ModernButton}"
+                        Click="BtnActualizarLista_Click"/>
+                <Button x:Name="BtnEliminarSeleccionado"
+                        Content="Eliminar seleccionado"
+                        Width="190"
+                        Height="36"
+                        Style="{StaticResource ModernButton}"
+                        Click="BtnEliminarSeleccionado_Click"/>
+            </StackPanel>
+
+            <TextBlock x:Name="TxtEstado"
+                       Foreground="#64748B"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,8"/>
+
+            <Border Background="White" CornerRadius="10" Padding="0" BorderBrush="#E2E8F0" BorderThickness="1">
+                <DataGrid x:Name="GridRespaldos"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          RowHeight="28"
+                          MaxHeight="420"
+                          SelectionMode="Single"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Fecha (UTC servidor)"
+                                            Binding="{Binding StoredAtUtc, StringFormat=yyyy-MM-dd HH:mm}"
+                                            Width="160"/>
+                        <DataGridTextColumn Header="Tamaño (bytes)"
+                                            Binding="{Binding SizeBytes}"
+                                            Width="120"/>
+                        <DataGridTextColumn Header="Ruta relativa"
+                                            Binding="{Binding RelativePath}"
+                                            Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

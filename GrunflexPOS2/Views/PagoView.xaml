@@ -1,0 +1,98 @@
+﻿<Window x:Class="GrunflexPOS2.Views.PagoView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pago"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        Width="400"
+        Height="300"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Grid Margin="20">
+
+        <Border Background="White"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="18">
+            <StackPanel VerticalAlignment="Center">
+
+                <!-- TOTAL -->
+                <TextBlock Text="TOTAL A PAGAR"
+                           Foreground="#1F4E79"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+
+                <TextBlock x:Name="TotalText"
+                           Foreground="#1F4E79"
+                           FontSize="30"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,5,0,20"/>
+
+                <!-- BOTONES -->
+                <WrapPanel HorizontalAlignment="Center" ItemWidth="140">
+
+                    <Button x:Name="BtnEfectivo" Content="💵 Efectivo"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnTarjeta" Content="💳 Tarjeta"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnTransferencia" Content="🏦 Transferencia"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnMixto" Content="💱 Mixto"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnCheque" Content="🧾 Cheque"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnVales" Content="🎟 Vales"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+
+                    <Button x:Name="BtnDolar" Content="💵 Dólares"
+                            Width="140"
+                            Height="44"
+                            Margin="5"
+                            Style="{StaticResource ModernButton}"
+                            Click="Metodo_Click"/>
+                </WrapPanel>
+
+                <!-- CANCELAR -->
+                <Button Content="Cancelar"
+                        Margin="0,20,0,0"
+                        Style="{StaticResource TopFlatButton}"
+                        Click="Cancelar_Click"/>
+
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</Window>

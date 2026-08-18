@@ -1,0 +1,45 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build-test-security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore "GrunflexPOS2.slnx"
+
+      - name: Build
+        run: dotnet build "GrunflexPOS2.slnx" --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test "GrunflexPOS.API.Tests/GrunflexPOS.API.Tests.csproj" --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Verify no hardcoded secrets pattern
+        run: |
+          if rg -n "Password=2106|AdminPassword\\s*=\\s*\".+\"|Jwt:SigningKey\\s*=\\s*\".+\"" "GrunflexPOS.API" "GrunflexPOS2"; then
+            echo "Potential hardcoded secret found."
+            exit 1
+          fi
+
+      - name: Check vulnerable dependencies
+        run: dotnet list "GrunflexPOS.API/GrunflexPOS.API.csproj" package --vulnerable --include-transitive
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/*.trx"

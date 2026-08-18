@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GrunflexPOS2.Models;
@@ -32,9 +32,10 @@ namespace GrunflexPOS2.Services
 
             var ventasValidas = ventas.Where(v => !v.EstaAnulada).ToList();
             var ventasAnuladas = ventas.Where(v => v.EstaAnulada).ToList();
+            var consumos = ventasValidas.Where(v => v.EsConsumoPersonal).ToList();
 
-            decimal totalEntradas = 0;     // Futuro módulo movimientos
-            decimal totalSalidas = 0;      // Futuro módulo movimientos
+            decimal totalEntradas = 0;
+            decimal totalSalidas = 0;
             decimal totalDevoluciones = ventasAnuladas.Sum(v => v.Total);
 
             decimal totalVentas = ventasValidas.Sum(v => v.Total);
@@ -60,10 +61,10 @@ namespace GrunflexPOS2.Services
 
             int totalVentasRealizadas = ventasValidas.Count;
 
-            // 🔥 Preparado para futuro módulo de costos
-            decimal totalGanancia = 0;
+            int movimientosConsumo = consumos.Count;
+            int articulosConsumo = consumos.Sum(v => v.Items.Sum(i => i.Cantidad));
 
-            // 🔥 Preparado para futuro módulo de impuestos
+            decimal totalGanancia = 0;
             decimal totalImpuestos = 0;
 
             var resumen = new ResumenCorte
@@ -78,6 +79,8 @@ namespace GrunflexPOS2.Services
                 TotalVentas = totalVentas,
                 TotalVentasRealizadas = totalVentasRealizadas,
                 TotalArticulosVendidos = totalArticulos,
+                MovimientosConsumoPersonal = movimientosConsumo,
+                ArticulosConsumoPersonal = articulosConsumo,
 
                 TotalEfectivo = totalEfectivo,
                 TotalDebito = totalDebito,

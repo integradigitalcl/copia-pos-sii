@@ -1,0 +1,61 @@
+Grunflex POS — Multicaja (conexión entre cajas)
+================================================
+
+Caja principal (servidor)
+-------------------------
+1) Tener activa una licencia con módulo "Multicaja" (Configuración → Activar licencia).
+
+2) Ejecutar UNA sola vez como administrador:
+     C:\Program Files\GrunflexPOS\ServerExtras\habilitar-recurso-grunflexpos.ps1
+   El script:
+     • Crea el recurso compartido SMB \\NOMBRE-PC\GrunflexPOS sobre %LocalAppData%\GrunflexPOS\data
+     • Otorga permisos "Users = Modify" a la carpeta.
+     • Habilita el grupo de firewall "Uso compartido de archivos e impresoras".
+     • Crea regla de firewall para TCP 7279 (entrante) que usa la API.
+
+3) Tener corriendo la API: acceso directo "Iniciar API (consola)" en el menú Inicio.
+   Anote la IP local del servidor (el script la muestra al final).
+
+4) Desde el POS → Configuración → Cajas → "Conectar más cajas":
+     • Ingrese nombre de la caja adicional.
+     • Active "Usar IP en la plantilla" y escriba la IP fija del servidor.
+     • Click en "Crear".
+   Se generan en el escritorio:
+     • grunflex-terminal.json (configuración del nuevo PC)
+     • habilitar-recurso-grunflexpos.ps1 (copia del script de servidor, por si necesita reaplicar)
+
+Caja adicional (cliente)
+------------------------
+1) Instalar Grunflex POS 1.0.6+ eligiendo tipo "Caja adicional".
+
+2) Copiar grunflex-terminal.json al escritorio del PC cliente
+   (o a la misma carpeta del ejecutable de Grunflex POS).
+
+3) Abrir el POS:
+     • Aplica automáticamente la plantilla (en %LocalAppData%\GrunflexPOS\config).
+     • Valida conexión a \\IP-SERVIDOR\GrunflexPOS y a la API.
+     • Si algo falla, muestra el error exacto y ofrece restablecer a base local.
+
+Problemas frecuentes y solución
+-------------------------------
+• "No se pudo conectar a la API del servidor principal":
+    - Revisar que en el servidor esté corriendo la API.
+    - Verificar firewall: ejecutar nuevamente habilitar-recurso-grunflexpos.ps1 como admin.
+    - Desde el cliente: 'Test-NetConnection -ComputerName IP -Port 7279'.
+
+• "No se encontró la carpeta compartida":
+    - Verificar acceso desde el cliente: en Explorador, abrir \\IP-SERVIDOR\GrunflexPOS
+    - Si Windows pide credenciales: usar un usuario válido del servidor o habilitar guest:
+        Group Policy → Configuración de equipo → Plantillas administrativas →
+        Red → Estación de trabajo Lanman → Habilitar inicios de sesión de invitado inseguros = "Habilitada"
+
+• Ventas que se traban entre cajas:
+    - SQLite sobre SMB tiene limitaciones con escrituras concurrentes.
+    - Para 2-3 cajas y volumen normal funciona; para más cajas o ventas simultáneas
+      recomendamos el modo API (que se agregará en versiones futuras).
+
+Licencia
+--------
+La función Multicaja es un módulo PAGADO. Sin licencia válida con "Multicaja=true"
+en el token firmado, el botón "Conectar más cajas" queda deshabilitado y el flujo
+no puede iniciar. Active en: POS → Configuración → Activar licencia.

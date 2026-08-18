@@ -1,0 +1,656 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.ConfiguracionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="ConfigPageBgBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ConfigTitleBrush" Color="#1E3A8A"/>
+        <SolidColorBrush x:Key="ConfigDescBrush" Color="#64748B"/>
+        <SolidColorBrush x:Key="ConfigPersonalBrush" Color="#7C3AED"/>
+
+        <Style TargetType="Image" x:Key="ConfigRowIconImage">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Stretch" Value="Uniform"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+        </Style>
+
+        <Style x:Key="ConfigRowCardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource ConfigTitleBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="ConfigRowCardSubtitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource ConfigDescBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <Style x:Key="ConfigRowCardButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="MinHeight" Value="92"/>
+            <Setter Property="MinWidth" Value="280"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="CardBd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.08" Direction="270"/>
+                            </Border.Effect>
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBd" Property="Background" Value="#F8FAFC"/>
+                                <Setter TargetName="CardBd" Property="BorderBrush" Value="#CBD5E1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ConfigHeroRowButtonStyle" TargetType="Button" BasedOn="{StaticResource ConfigRowCardButtonStyle}">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="MinWidth" Value="0"/>
+        </Style>
+
+    </UserControl.Resources>
+
+    <ScrollViewer Background="{StaticResource ConfigPageBgBrush}"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="PanelContenidoConfig" Margin="20,16,20,28">
+
+            <!-- Cabecera mockup -->
+            <StackPanel Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="44"
+                            Height="44"
+                            CornerRadius="22"
+                            Background="#EFF6FF"
+                            Margin="0,0,12,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   Text="&#xE713;"
+                                   FontSize="20"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"/>
+                    </Border>
+                    <TextBlock Text="PANEL DE CONFIGURACI&#211;N"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource ConfigTitleBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <Border Height="2"
+                        Background="{DynamicResource ConfigAccentBrush}"
+                        Margin="0,14,0,0"/>
+            </StackPanel>
+
+            <!-- Licencia -->
+            <Button x:Name="BtnCardLicencia"
+                    Style="{StaticResource ConfigHeroRowButtonStyle}"
+                    Click="LicenciaEstado_Click">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Width="56"
+                            Height="56"
+                            CornerRadius="28"
+                            Background="{DynamicResource ConfigAccentBrush}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   Text="&#xE752;"
+                                   FontSize="24"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="White"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                        <TextBlock Text="Estado de licencia y sincronizaci&#243;n"
+                                   Style="{StaticResource ConfigRowCardTitle}"/>
+                        <TextBlock Text="Revisa el estado de tu licencia y la sincronizaci&#243;n de datos en la nube."
+                                   Style="{StaticResource ConfigRowCardSubtitle}"/>
+                    </StackPanel>
+                    <Border Grid.Column="2"
+                            Width="34"
+                            Height="34"
+                            CornerRadius="17"
+                            Background="#EFF6FF"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="&#xE76C;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+            </Button>
+
+            <!-- GENERAL -->
+            <Border Background="{DynamicResource ConfigAccentBrush}"
+                    CornerRadius="18"
+                    Padding="14,7"
+                    HorizontalAlignment="Left"
+                    Margin="0,8,0,14">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE734;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="13"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock Text="GENERAL"
+                               FontSize="12"
+                               FontWeight="Bold"
+                               Foreground="White"/>
+                </StackPanel>
+            </Border>
+
+            <WrapPanel x:Name="WrapGeneral">
+                <Button Tag="Opciones" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/ajuste.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Opciones habilitadas" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura funciones del sistema" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Cajero" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/cajero-automatico.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Cajero" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Administra cajeros" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="BaseDatos" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/big-data.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Base de datos" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Gestiona tu base de datos" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Facturacion" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/facturas.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Facturaci&#243;n" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configure facturaci&#243;n" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Folio" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/reporte-de-desempeno.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Modificar folio" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Administra folios" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button x:Name="BtnCardCaja"
+                        Tag="Caja"
+                        Style="{StaticResource ConfigRowCardButtonStyle}"
+                        Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/mesa-de-edicion.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Administrar caja" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura tus cajas" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+            </WrapPanel>
+
+            <!-- PERSONALIZACIÓN -->
+            <Border Background="{StaticResource ConfigPersonalBrush}"
+                    CornerRadius="18"
+                    Padding="14,7"
+                    HorizontalAlignment="Left"
+                    Margin="0,20,0,14">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE790;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="13"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBlock Text="PERSONALIZACI&#211;N"
+                               FontSize="12"
+                               FontWeight="Bold"
+                               Foreground="White"/>
+                </StackPanel>
+            </Border>
+
+            <WrapPanel x:Name="WrapPersonalizacion">
+                <Button Tag="Logo" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/diseno-de-logo.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Logotipo" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Personaliza tu marca" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#F5F3FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource ConfigPersonalBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Impresora" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/impresora.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Impresora de ticket" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura impresoras" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#F5F3FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource ConfigPersonalBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Pagos" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/tarjeta-de-debito.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Formas de pago" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Administra m&#233;todos" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#F5F3FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource ConfigPersonalBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Corte" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/estar.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Corte" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura corte de caja" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#FEF2F2" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#DC2626"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Unidades" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/big-data.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Unidades de medida" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Gestiona unidades" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#ECFDF5" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#059669"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Scanner" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/escaner.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Lector de c&#243;digo" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura dispositivos" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#FFF7ED" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#EA580C"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Cajon" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/cajero-automatico.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Caj&#243;n de dinero" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura caj&#243;n" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Bascula" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/bascula.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="B&#225;scula" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura b&#225;sculas" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#FEF2F2" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#DC2626"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Servipag" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/pago-en-linea.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="SERVIPAG" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura Integraci&#243;n" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#F5F3FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource ConfigPersonalBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="YouTube" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="#FF0000">
+                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE768;" FontSize="26"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="White"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="YOUTUBE MUSIC" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Configura Integraci&#243;n" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#FEE2E2" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#DC2626"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Correo" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="0" Style="{StaticResource ConfigRowIconImage}" Source="/Assets/icons/notificacion-por-correo.png"/>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Notificaciones por Correo Electr&#243;nico" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Gestiona notificaciones" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#FFF7ED" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#EA580C"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <Button Tag="Diagnostico" Style="{StaticResource ConfigRowCardButtonStyle}" Click="CardButton_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="#EFF6FF">
+                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="26"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
+                            <TextBlock Text="Diagn&#243;stico del sistema" Style="{StaticResource ConfigRowCardTitle}"/>
+                            <TextBlock Text="Detecta y repara problemas comunes" Style="{StaticResource ConfigRowCardSubtitle}"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{DynamicResource ConfigAccentBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
+            </WrapPanel>
+
+            <!-- Pie informativo -->
+            <Border Background="#F8FAFC"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="1"
+                    CornerRadius="14"
+                    Padding="16,18"
+                    Margin="0,24,0,0">
+                <UniformGrid Columns="4">
+                    <StackPanel HorizontalAlignment="Center" Margin="8,0">
+                        <TextBlock Text="&#xE72E;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="SEGURO"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ConfigTitleBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="Tus datos protegidos"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ConfigDescBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Margin="8,0">
+                        <TextBlock Text="&#xE9F5;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="R&#193;PIDO"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ConfigTitleBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="Rendimiento &#243;ptimo"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ConfigDescBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Margin="8,0">
+                        <TextBlock Text="&#xE753;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="CONFIABLE"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ConfigTitleBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="Siempre disponible"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ConfigDescBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Margin="8,0">
+                        <TextBlock Text="&#xE9D9;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource ConfigAccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="INTELIGENTE"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ConfigTitleBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="Informaci&#243;n que impulsa"
+                                   FontSize="11"
+                                   Foreground="{StaticResource ConfigDescBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                </UniformGrid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

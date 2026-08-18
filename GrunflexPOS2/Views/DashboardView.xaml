@@ -1,0 +1,595 @@
+<UserControl x:Class="GrunflexPOS2.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F9FAFB">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="TextPrimary" Color="#111827"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#6B7280"/>
+        <SolidColorBrush x:Key="BorderSoft" Color="#E5E7EB"/>
+
+        <Style x:Key="DashCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <Style x:Key="KpiCard" TargetType="Border" BasedOn="{StaticResource DashCard}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+
+        <Style x:Key="TituloSeccion" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+
+        <Style x:Key="SubtituloSeccion" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <Style x:Key="BtnActualizar" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,0"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="MinWidth" Value="110"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#1E40AF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DashFilterShell" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoft}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="4,0,4,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  Padding="0,0,0,24">
+        <StackPanel Margin="16,12">
+
+            <!-- Barra filtros -->
+            <Border Style="{StaticResource DashCard}" Padding="16,14" Margin="0,0,0,16">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="Período:"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,10,0"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   FontSize="13"/>
+
+                        <Border Style="{StaticResource DashFilterShell}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE787;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           Foreground="{StaticResource PrimaryBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,4,0"/>
+                                <ComboBox x:Name="CmbPeriodo"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ModernComboBoxFlat}"
+                                          MinWidth="168"
+                                          VerticalAlignment="Center"
+                                          VerticalContentAlignment="Center"
+                                          SelectionChanged="CmbPeriodo_SelectionChanged">
+                                    <ComboBoxItem Content="Hoy" Tag="Hoy" IsSelected="True"/>
+                                    <ComboBoxItem Content="Últimos 7 días" Tag="7"/>
+                                    <ComboBoxItem Content="Mes actual" Tag="Mes"/>
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel x:Name="PanelMesAnio"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    Margin="8,0,0,0"
+                                    Visibility="Collapsed">
+                            <Border Style="{StaticResource DashFilterShell}"
+                                    Margin="0,0,8,0">
+                                <ComboBox x:Name="CmbMes"
+                                          Style="{StaticResource ModernComboBoxFlat}"
+                                          Width="132"
+                                          VerticalAlignment="Center"
+                                          VerticalContentAlignment="Center"
+                                          DisplayMemberPath="Nombre"
+                                          SelectedValuePath="Numero"
+                                          SelectionChanged="MesAnio_SelectionChanged"/>
+                            </Border>
+                            <Border Style="{StaticResource DashFilterShell}">
+                                <ComboBox x:Name="CmbAnio"
+                                          Style="{StaticResource ModernComboBoxFlat}"
+                                          Width="84"
+                                          VerticalAlignment="Center"
+                                          VerticalContentAlignment="Center"
+                                          SelectionChanged="MesAnio_SelectionChanged"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <Button Style="{StaticResource BtnActualizar}"
+                                Click="BtnActualizar_Click"
+                                Margin="0,0,16,0"
+                                Content="Actualizar"/>
+                        <TextBlock Text="&#xE72C;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,6,0"/>
+                        <TextBlock x:Name="TxtUltimaActualizacion"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- KPI -->
+            <UniformGrid Columns="4" Margin="0,0,0,16">
+                <!-- Ventas hoy -->
+                <Border x:Name="KpiVentas" Style="{StaticResource KpiCard}" Margin="0,0,8,0" MouseLeftButtonDown="KpiVentas_Click">
+                    <Grid>
+                        <Path VerticalAlignment="Bottom" Stretch="Fill" Height="48" Opacity="0.35"
+                              Data="M0,80 Q80,20 200,50 T400,30 L400,80 L0,80 Z"
+                              Fill="#DBEAFE"/>
+                        <StackPanel Margin="16,16,16,20">
+                            <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="KpiVentasTitulo" Text="Ventas hoy" Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+                            <TextBlock x:Name="VentasHoyText" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Clic: ventas del día" FontSize="11" Foreground="#9CA3AF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Ventas ayer / comparación -->
+                <Border x:Name="KpiComparacion" Style="{StaticResource KpiCard}" Margin="4,0" MouseLeftButtonDown="KpiComparacion_Click">
+                    <Grid>
+                        <Path VerticalAlignment="Bottom" Stretch="Fill" Height="48" Opacity="0.35"
+                              Data="M0,70 Q100,40 220,55 T400,25 L400,80 L0,80 Z"
+                              Fill="#D1FAE5"/>
+                        <StackPanel Margin="16,16,16,20">
+                            <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#059669" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="KpiComparacionTitulo" Text="Ventas ayer" Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+                            <TextBlock x:Name="VentasAyerText" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Clic: detalle comparación" FontSize="11" Foreground="#9CA3AF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Variación -->
+                <Border x:Name="KpiVariacion" Style="{StaticResource KpiCard}" Margin="4,0" MouseLeftButtonDown="KpiVariacion_Click">
+                    <Grid>
+                        <Path VerticalAlignment="Bottom" Stretch="Fill" Height="48" Opacity="0.35"
+                              Data="M0,75 Q90,30 210,45 T400,35 L400,80 L0,80 Z"
+                              Fill="#A7F3D0"/>
+                        <StackPanel Margin="16,16,16,20">
+                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#047857" Margin="0,0,0,8"/>
+                            <TextBlock Text="Variación" Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+                            <TextBlock x:Name="VariacionText" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Clic: resumen período" FontSize="11" Foreground="#9CA3AF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Ticket -->
+                <Border x:Name="KpiTicket" Style="{StaticResource KpiCard}" Margin="8,0,0,0" MouseLeftButtonDown="KpiTicket_Click">
+                    <Grid>
+                        <Path VerticalAlignment="Bottom" Stretch="Fill" Height="48" Opacity="0.28"
+                              Data="M0,72 Q70,25 200,40 T400,28 L400,80 L0,80 Z"
+                              Fill="#EDE9FE"/>
+                        <StackPanel Margin="16,16,16,20">
+                            <TextBlock Text="&#xE8C7;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#7C3AED" Margin="0,0,0,8"/>
+                            <TextBlock Text="Ticket promedio" Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+                            <TextBlock x:Name="TicketPromedioText" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/>
+                            <TextBlock Text="Clic: métodos de pago" FontSize="11" Foreground="#9CA3AF" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </UniformGrid>
+
+            <!-- Ventas 7 días -->
+            <Border Style="{StaticResource DashCard}" Margin="0,0,0,16" Padding="18,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Ventas últimos 7 días calendario" Style="{StaticResource TituloSeccion}"/>
+                        <TextBlock Text="Totales por día local" Style="{StaticResource SubtituloSeccion}" Margin="0,4,0,12"/>
+                        <Border Background="#FAFBFC" CornerRadius="8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" Padding="8">
+                            <Grid MinHeight="210">
+                                <Canvas x:Name="GraficoVentas" Width="640" Height="200" HorizontalAlignment="Center" ClipToBounds="True"/>
+                                <StackPanel x:Name="PanelGrafico7Vacio"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="Collapsed">
+                                    <TextBlock Text="&#xE9D9;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="36"
+                                               Foreground="#CBD5E1"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="TxtGraficoVacio"
+                                               Text="Sin ventas en esta semana"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{StaticResource TextSecondary}"
+                                               FontSize="14"
+                                               Margin="0,12,0,4"/>
+                                    <TextBlock Text="Los datos aparecerán aquí cuando tengas ventas."
+                                               HorizontalAlignment="Center"
+                                               Foreground="#9CA3AF"
+                                               FontSize="12"
+                                               TextAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                    <Border Grid.Column="1"
+                            VerticalAlignment="Bottom"
+                            Margin="16,48,0,0"
+                            Width="120"
+                            Height="100"
+                            CornerRadius="8"
+                            Background="#F3F4F6"
+                            Visibility="Visible">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE8F1;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="40"
+                                       Foreground="#93C5FD"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Resumen"
+                                       FontSize="11"
+                                       Foreground="#9CA3AF"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Por hora + Resumen hoy -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="7*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource DashCard}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE823;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="Ventas por hora (hoy)" Style="{StaticResource TituloSeccion}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Border Background="#FAFBFC" CornerRadius="8" BorderBrush="{StaticResource BorderSoft}" BorderThickness="1" Padding="8">
+                            <Grid MinHeight="180">
+                                <Canvas x:Name="GraficoHoras" Width="520" Height="170" HorizontalAlignment="Center"/>
+                                <StackPanel x:Name="PanelHorasVacio"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="Collapsed">
+                                    <TextBlock Text="&#xE121;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="32"
+                                               Foreground="#CBD5E1"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="TxtHorasVacio"
+                                               Text="Sin ventas hoy"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{StaticResource TextSecondary}"
+                                               Margin="0,10,0,4"/>
+                                    <TextBlock Text="Los datos aparecerán cuando registres ventas el día de hoy."
+                                               HorizontalAlignment="Center"
+                                               Foreground="#9CA3AF"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"
+                                               TextAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource DashCard}" VerticalAlignment="Stretch">
+                    <StackPanel>
+                        <TextBlock Text="Resumen de hoy" Style="{StaticResource TituloSeccion}" Margin="0,0,0,16"/>
+                        <Border Background="#EFF6FF" CornerRadius="10" Padding="12,10" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource PrimaryBrush}" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE8CC;" FontFamily="Segoe MDL2 Assets" Foreground="White" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Ventas" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    <TextBlock x:Name="TxtResumenVentasHoy" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Border Background="#ECFDF5" CornerRadius="10" Padding="12,10" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="36" Height="36" CornerRadius="8" Background="#059669" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE8F7;" FontFamily="Segoe MDL2 Assets" Foreground="White" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Transacciones" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    <TextBlock x:Name="TxtResumenTransacciones" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Border Background="#F5F3FF" CornerRadius="10" Padding="12,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="36" Height="36" CornerRadius="8" Background="#7C3AED" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE8B9;" FontFamily="Segoe MDL2 Assets" Foreground="White" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Unidades vendidas" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    <TextBlock x:Name="TxtResumenUnidades" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Top productos + métodos -->
+            <UniformGrid Columns="2" Margin="0,0,0,16">
+                <Border Style="{StaticResource DashCard}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="&#xE735;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="#CA8A04"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="Top productos" Style="{StaticResource TituloSeccion}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Por cantidad vendida en el período seleccionado."
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   Margin="0,0,0,12"/>
+                        <StackPanel x:Name="TopProductosPanel"/>
+                        <StackPanel x:Name="PanelTopVacio" HorizontalAlignment="Center" Margin="0,16,0,8" Visibility="Collapsed">
+                            <TextBlock Text="&#xE7C3;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="44"
+                                       Foreground="#E5E7EB"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TxtTopVacio"
+                                       Text="Aún no hay líneas de venta en base de datos."
+                                       Foreground="{StaticResource TextSecondary}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Margin="0,12,0,6"/>
+                            <TextBlock Text="Los productos más vendidos aparecerán aquí."
+                                       Foreground="#9CA3AF"
+                                       FontSize="12"
+                                       TextAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource DashCard}" Margin="8,0,0,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="&#xE8CB;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="18"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock Text="Ventas por método de pago" Style="{StaticResource TituloSeccion}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Grid MinHeight="220">
+                            <DataGrid x:Name="GridMetodos"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      RowBackground="White"
+                                      AlternatingRowBackground="#FAFBFC"
+                                      ColumnHeaderHeight="36">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Método" Binding="{Binding Metodo}" Width="*"/>
+                                    <DataGridTextColumn Header="Total" Binding="{Binding Total, StringFormat=C}" Width="120"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Border x:Name="PanelMetodosVacio"
+                                    Background="#FAFBFC"
+                                    CornerRadius="8"
+                                    Visibility="Collapsed">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="16">
+                                    <TextBlock Text="&#xE8C7;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="36"
+                                               Foreground="#E5E7EB"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Sin datos disponibles"
+                                               Foreground="{StaticResource TextSecondary}"
+                                               Margin="0,12,0,0"
+                                               HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Estado del negocio -->
+            <Border Style="{StaticResource DashCard}" Padding="18,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="&#xE785;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="20"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,10,0"/>
+                            <TextBlock Text="Estado del negocio" Style="{StaticResource TituloSeccion}" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="TxtEstadoAdvertencia"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Margin="0,0,0,10"/>
+
+                        <Border x:Name="PanelLiderProducto"
+                                Background="#FEF9C3"
+                                BorderBrush="#FDE047"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10"
+                                Margin="0,0,0,14"
+                                Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE734;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="16"
+                                           Foreground="#CA8A04"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <TextBlock x:Name="TxtLiderProducto"
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Center"
+                                           Foreground="#854D0E"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+
+                        <UniformGrid Columns="4" Margin="0,0,0,0">
+                            <Border Background="#ECFDF5" CornerRadius="10" Padding="12" Margin="0,0,8,0" BorderBrush="#D1FAE5" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Días con ventas" Foreground="{StaticResource TextSecondary}" FontSize="11" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="TxtMetricDiasVentas" FontSize="20" FontWeight="Bold" Foreground="#047857" Margin="0,6,0,0"/>
+                                    <TextBlock Text="de los últimos 30 días" Foreground="#9CA3AF" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#ECFDF5" CornerRadius="10" Padding="12" Margin="4,0" BorderBrush="#D1FAE5" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Ventas (30 días)" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                                    <TextBlock x:Name="TxtMetricVentas30" FontSize="20" FontWeight="Bold" Foreground="#047857" Margin="0,6,0,0"/>
+                                    <TextBlock Text="Total generado" Foreground="#9CA3AF" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#ECFDF5" CornerRadius="10" Padding="12" Margin="4,0" BorderBrush="#D1FAE5" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Transacciones (30 días)" Foreground="{StaticResource TextSecondary}" FontSize="11" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="TxtMetricTrans30" FontSize="20" FontWeight="Bold" Foreground="#047857" Margin="0,6,0,0"/>
+                                    <TextBlock Text="Total realizadas" Foreground="#9CA3AF" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#ECFDF5" CornerRadius="10" Padding="12" Margin="8,0,0,0" BorderBrush="#D1FAE5" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="Unidades (30 días)" Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                                    <TextBlock x:Name="TxtMetricUnidades30" FontSize="20" FontWeight="Bold" Foreground="#047857" Margin="0,6,0,0"/>
+                                    <TextBlock Text="Total vendidas" Foreground="#9CA3AF" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="16,36,0,0">
+                        <Button Height="44"
+                                MinWidth="168"
+                                Style="{StaticResource BtnActualizar}"
+                                Click="ImprimirReporte_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE792;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Exportar PDF" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Border Width="100" Height="72" Margin="0,16,0,0" HorizontalAlignment="Center" CornerRadius="8" Background="#EFF6FF">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="&#xE8D6;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="36"
+                                           Foreground="#60A5FA"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Tu tienda"
+                                           FontSize="10"
+                                           Foreground="#93C5FD"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

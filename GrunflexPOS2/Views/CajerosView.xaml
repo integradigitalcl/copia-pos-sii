@@ -1,0 +1,120 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.CajerosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280" MinWidth="220"/>
+            <ColumnDefinition Width="*" MinWidth="380"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3" Margin="0,0,0,12">
+            <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+        </Border>
+
+        <!-- LISTA DE CAJEROS: la lista ocupa toda la altura disponible para que crezca
+             y se achique con la ventana en vez de tener un Height="400" fijo. -->
+        <Grid Grid.Row="1" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Text="ADMINISTRACIÓN DE CAJEROS"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryBrush}"
+                       Margin="0,0,0,10"
+                       TextWrapping="Wrap"/>
+
+            <TextBox x:Name="TxtBuscar"
+                     Grid.Row="1"
+                     Height="30"
+                     Margin="0,0,0,10"
+                     VerticalContentAlignment="Center"
+                     TextChanged="TxtBuscar_TextChanged"/>
+
+            <ListBox x:Name="ListaCajeros"
+                     Grid.Row="2"
+                     MinHeight="180"
+                     SelectionChanged="ListaCajeros_SelectionChanged"
+                     DisplayMemberPath="Username"/>
+        </Grid>
+
+        <!-- FORMULARIO: dentro de un ScrollViewer para no cortar contenido en pantallas
+             chicas; los botones usan WrapPanel para que "Eliminar" no se corte cuando
+             la columna es angosta. -->
+        <ScrollViewer Grid.Row="1" Grid.Column="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="20,0,0,0">
+            <StackPanel>
+
+                <TextBlock Text="NUEVO CAJERO"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryBrush}"
+                           Margin="0,0,0,10"/>
+
+                <TextBlock Text="Usuario"/>
+                <TextBox x:Name="TxtUsuario" Height="30" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Contraseña"/>
+                <PasswordBox x:Name="TxtPassword" Height="30" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Nombre completo"/>
+                <TextBox x:Name="TxtNombre" Height="30" Margin="0,0,0,20"/>
+
+                <WrapPanel>
+                    <CheckBox x:Name="ChkVentas" Content="Ventas" Margin="10"/>
+                    <CheckBox x:Name="ChkClientes" Content="Clientes" Margin="10"/>
+                    <CheckBox x:Name="ChkProductos" Content="Productos" Margin="10"/>
+                    <CheckBox x:Name="ChkInventario" Content="Inventario" Margin="10"/>
+                    <CheckBox x:Name="ChkCancelarTickets" Content="Cancelar tickets" Margin="10"/>
+                    <CheckBox x:Name="ChkDescuentos" Content="Descuentos" Margin="10"/>
+                    <CheckBox x:Name="ChkVerHistorial" Content="Ver historial" Margin="10"/>
+                    <CheckBox x:Name="ChkCobrar" Content="Cobrar" Margin="10"/>
+                    <CheckBox x:Name="ChkFacturar" Content="Facturar" Margin="10"/>
+                </WrapPanel>
+
+                <WrapPanel Margin="0,20,0,0">
+                    <Button Content="Guardar"
+                            MinWidth="120"
+                            Margin="0,0,8,8"
+                            Click="BtnGuardar_Click"
+                            Style="{StaticResource MiniTopButton}"/>
+
+                    <Button Content="Cancelar"
+                            MinWidth="120"
+                            Margin="0,0,8,8"
+                            Click="BtnCancelar_Click"
+                            Style="{StaticResource MiniTopButton}"/>
+
+                    <Button Content="Eliminar"
+                            MinWidth="120"
+                            Margin="0,0,8,8"
+                            Click="BtnEliminar_Click"
+                            Style="{StaticResource MiniTopButton}"/>
+                </WrapPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>

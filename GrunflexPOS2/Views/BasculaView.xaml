@@ -1,0 +1,108 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.BasculaView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+        <StackPanel Margin="20">
+
+            <Border Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3" Margin="0,0,0,12">
+                <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+            </Border>
+
+            <!-- TÍTULO -->
+            <TextBlock Text="BASCULA CONECTADA A LA COMPUTADORA"
+                      FontSize="34"
+                       FontWeight="Bold"
+                      Foreground="{StaticResource PrimaryBrush}"
+                       Margin="0,0,0,20"/>
+
+            <!-- CHECK PRINCIPAL -->
+            <CheckBox x:Name="ChkBasculaActiva"
+                      Content="Tengo conectada una báscula a mi computadora"
+                      FontSize="14"
+                      Checked="Config_Changed"
+                      Unchecked="Config_Changed"
+                      Margin="0,0,0,20"/>
+
+            <Border x:Name="BadgeEstadoBascula"
+                    Background="#991B1B"
+                    CornerRadius="4"
+                    Padding="10,6"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,12">
+                <TextBlock x:Name="TxtEstadoBascula"
+                           Text="Báscula no detectada"
+                           Foreground="White"
+                           FontWeight="SemiBold"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                <TextBlock Text="Controlador/Puerto detectado:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                <ComboBox x:Name="CmbDriverBascula"
+                          Width="240"
+                          SelectionChanged="Config_Changed"/>
+            </StackPanel>
+
+            <!-- TEXTO -->
+            <TextBlock TextWrapping="Wrap"
+                       Margin="0,0,0,10"
+                       Text="Si tienes una báscula y no es compatible con nuestro sistema, puedes solicitar soporte para implementarla."/>
+
+            <!-- BOTÓN -->
+            <Button Content="Mi báscula no aparece"
+                    Width="200"
+                    Click="BtnSoporteBascula_Click"
+                    Margin="0,0,0,20"
+                    Style="{StaticResource MiniTopButton}"/>
+
+            <!-- SUBTÍTULO -->
+            <TextBlock Text="BASCULAS IMPRESORAS DE ETIQUETAS"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Margin="0,0,0,10"/>
+
+            <!-- DESCRIPCIÓN -->
+            <TextBlock TextWrapping="Wrap"
+                       Margin="0,0,0,10"
+                       Text="Estas básculas imprimen etiquetas con código de barras que incluyen información del producto como precio o peso."/>
+
+            <!-- INPUT CÓDIGO -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Código inicial:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                <TextBox x:Name="TxtCodigoInicial"
+                         Width="100"
+                         Height="25"
+                         Text="2000"
+                         TextChanged="Config_Changed"/>
+            </StackPanel>
+
+            <!-- OPCIONES -->
+            <CheckBox x:Name="ChkEtiquetaPrecio"
+                      Content="Mi báscula imprime etiquetas con el precio"
+                      Checked="Config_Changed"
+                      Unchecked="Config_Changed"
+                      Margin="0,0,0,5"/>
+
+            <CheckBox x:Name="ChkEtiquetaPeso"
+                      Content="Mi báscula imprime etiquetas con el peso"
+                      Checked="Config_Changed"
+                      Unchecked="Config_Changed"
+                      Margin="0,0,0,5"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,32 @@
+<Window x:Class="GrunflexPOS2.Views.SupportTicketWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Soporte — ticket"
+        Height="420"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#0F172A">
+    <Border Margin="16" Background="White" CornerRadius="12" Padding="20">
+        <StackPanel>
+            <TextBlock Text="Nuevo ticket de soporte" FontSize="18" FontWeight="Bold" Foreground="#0F172A"/>
+            <TextBlock x:Name="TxtActivation" Margin="0,8,0,12" Foreground="#64748B" FontSize="12" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Asunto" Foreground="#475569" FontSize="12"/>
+            <TextBox x:Name="TxtAsunto" Height="32" Margin="0,4,0,12"/>
+
+            <TextBlock Text="Detalle" Foreground="#475569" FontSize="12"/>
+            <TextBox x:Name="TxtDetalle"
+                     Height="160"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Margin="0,4,0,12"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancelar" Width="100" Height="36" Margin="0,0,8,0" Click="BtnCancelar_Click"/>
+                <Button x:Name="BtnEnviar" Content="Enviar" Width="100" Height="36" Style="{StaticResource GreenButton}" Click="BtnEnviar_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

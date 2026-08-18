@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -6,15 +6,41 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\icons\ajuste.png" />
+    <None Remove="Assets\icons\bascula.png" />
+    <None Remove="Assets\icons\big-data.png" />
+    <None Remove="Assets\icons\cajero-automatico.png" />
+    <None Remove="Assets\icons\diseno-de-logo.png" />
+    <None Remove="Assets\icons\escaner.png" />
+    <None Remove="Assets\icons\estar.png" />
+    <None Remove="Assets\icons\facturas.png" />
+    <None Remove="Assets\icons\impresora.png" />
+    <None Remove="Assets\icons\mesa-de-edicion.png" />
+    <None Remove="Assets\icons\notificacion-por-correo.png" />
+    <None Remove="Assets\icons\pago-en-linea.png" />
+    <None Remove="Assets\icons\reduccion-de-precios.png" />
+    <None Remove="Assets\icons\reporte-de-desempeno.png" />
+    <None Remove="Assets\icons\sin-contacto.png" />
+    <None Remove="Assets\icons\tarjeta-de-debito.png" />
+    <None Remove="Assets\icons\user-interface.png" />
+    <None Remove="Assets\logo_login.png" />
+    <None Remove="Assets\logo.png" />
     <None Remove="Assets\logo_grunflex.png" />
     <None Remove="Fonts\ARIAL.TTF" />
     <None Remove="Fonts\ARIALBD.TTF" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Assets\logo_login.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\logo_grunflex.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -27,10 +53,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModels\" />
+    <ProjectReference Include="..\Grunflex.Licensing.Abstractions\Grunflex.Licensing.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.23" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.23" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.23">
@@ -38,11 +69,43 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.10" />
     <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="QuestPDF" Version="2026.2.4" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.7" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\icons\ajuste.png" />
+    <Resource Include="Assets\icons\bascula.png" />
+    <Resource Include="Assets\icons\big-data.png" />
+    <Resource Include="Assets\icons\cajero-automatico.png" />
+    <Resource Include="Assets\icons\diseno-de-logo.png" />
+    <Resource Include="Assets\icons\escaner.png" />
+    <Resource Include="Assets\icons\estar.png" />
+    <Resource Include="Assets\icons\facturas.png" />
+    <Resource Include="Assets\icons\impresora.png" />
+    <Resource Include="Assets\icons\mesa-de-edicion.png" />
+    <Resource Include="Assets\icons\notificacion-por-correo.png" />
+    <Resource Include="Assets\icons\pago-en-linea.png" />
+    <Resource Include="Assets\icons\reduccion-de-precios.png" />
+    <Resource Include="Assets\icons\reporte-de-desempeno.png" />
+    <Resource Include="Assets\icons\sin-contacto.png" />
+    <Resource Include="Assets\icons\tarjeta-de-debito.png" />
+    <Resource Include="Assets\icons\user-interface.png" />
+    <Resource Include="Assets\logo_login.png" />
+    <Resource Include="Assets\ventas_grid_background.png" />
+    <Resource Include="Assets\ventas_grid_watermark_logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="appsettings.local.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

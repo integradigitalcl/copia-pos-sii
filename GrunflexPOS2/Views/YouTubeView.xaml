@@ -1,0 +1,29 @@
+<UserControl x:Class="GrunflexPOS2.Views.YouTubeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             Background="{StaticResource BackgroundBrush}">
+
+    <Grid>
+        <StackPanel Orientation="Horizontal" Background="#0F0F0F" Height="40">
+            <Button Content="&#xE72B;" FontFamily="Segoe MDL2 Assets" Width="40" Foreground="White"
+                    Background="Transparent" BorderThickness="0" Click="Back_Click"/>
+            <Button Content="&#xE72A;" FontFamily="Segoe MDL2 Assets" Width="40" Foreground="White"
+                    Background="Transparent" BorderThickness="0" Click="Forward_Click"/>
+            <Button Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" Width="40" Foreground="White"
+                    Background="Transparent" BorderThickness="0" Click="Reload_Click"/>
+            <TextBlock Text="YouTube Music"
+                       Foreground="#FF0000"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+            <TextBlock Text="Inicie sesi&#243;n con su cuenta Google"
+                       Foreground="#AAAAAA"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="12,0,0,0"/>
+        </StackPanel>
+
+        <wv2:WebView2 x:Name="Browser" Margin="0,40,0,0"/>
+    </Grid>
+</UserControl>

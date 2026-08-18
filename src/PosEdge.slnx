@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="PosEdge.Api/PosEdge.Api.csproj" />
+  <Project Path="PosEdge.Application/PosEdge.Application.csproj" />
+  <Project Path="PosEdge.Contracts/PosEdge.Contracts.csproj" />
+  <Project Path="PosEdge.Domain/PosEdge.Domain.csproj" />
+  <Project Path="PosEdge.Infrastructure/PosEdge.Infrastructure.csproj" />
+  <Project Path="PosEdge.Shared/PosEdge.Shared.csproj" />
+  <Project Path="PosEdge.Sync/PosEdge.Sync.csproj" />
+  <Project Path="PosEdge.Terminal/PosEdge.Terminal.csproj" />
+  <Project Path="PosEdge.Workers/PosEdge.Workers.csproj" />
+</Solution>

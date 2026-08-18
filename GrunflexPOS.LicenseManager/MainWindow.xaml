@@ -1,0 +1,124 @@
+﻿<Window x:Class="GrunflexPOS.LicenseManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Grunflex License Manager"
+        Height="560"
+        Width="820"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanMinimize">
+    <Grid Background="#F4F6FB" Margin="16">
+        <Border Background="White" CornerRadius="12" BorderBrush="#D7DEEE" BorderThickness="1" Padding="18">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Margin="0,0,0,14">
+                    <TextBlock Text="Gestor de licencias (admin)"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"/>
+                    <TextBlock Text="Aplicacion separada del POS para validar y aplicar licencias."
+                               Margin="0,6,0,0"
+                               Foreground="#475569"/>
+                </StackPanel>
+
+                <GroupBox Grid.Row="1" Header="Validacion de administrador" Margin="0,0,0,14">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Usuario" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtUsuario" Grid.Row="0" Grid.Column="1" MinWidth="300" Margin="0,0,0,8"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Contrasena" VerticalAlignment="Center"/>
+                        <PasswordBox x:Name="TxtPassword" Grid.Row="1" Grid.Column="1" MinWidth="300"/>
+
+                        <Button Grid.Row="2"
+                                Grid.Column="1"
+                                Content="Validar admin"
+                                Width="140"
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Left"
+                                Click="ValidarAdmin_Click"/>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="2" Header="Licencia" Margin="0,0,0,14">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Activation ID" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtActivationId" Grid.Column="1" MinWidth="320" IsEnabled="False" Margin="0,0,8,0"/>
+                            <Button Grid.Column="2"
+                                    Content="Activar online"
+                                    Width="120"
+                                    x:Name="BtnActivarOnline"
+                                    IsEnabled="False"
+                                    Click="ActivarOnline_Click"/>
+                        </Grid>
+
+                        <TextBlock Grid.Row="1" Text="Token de licencia" Margin="0,8,0,6"/>
+                        <TextBox x:Name="TxtLicencia"
+                                 Grid.Row="2"
+                                 Height="120"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsEnabled="False"/>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Aplicar licencia"
+                                    Width="140"
+                                    Margin="0,0,8,0"
+                                    IsEnabled="False"
+                                    x:Name="BtnAplicarLicencia"
+                                    Click="AplicarLicencia_Click"/>
+                            <Button Content="Cargar licencia actual"
+                                    Width="160"
+                                    x:Name="BtnCargarActual"
+                                    Click="CargarActual_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <TextBox x:Name="TxtEstado"
+                         Grid.Row="3"
+                         IsReadOnly="True"
+                         VerticalScrollBarVisibility="Auto"
+                         TextWrapping="Wrap"
+                         BorderBrush="#D7DEEE"
+                         Background="#F8FAFC"
+                         Padding="10"/>
+
+                <TextBlock Grid.Row="4"
+                           Margin="0,12,0,0"
+                           Foreground="#64748B"
+                           Text="Este gestor no abre el POS y solo modifica el almacenamiento de licencia."/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

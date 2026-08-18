@@ -1,0 +1,177 @@
+<Window x:Class="GrunflexPOS2.Views.ActivacionLicenciaWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Activación — Grunflex POS"
+        Height="560"
+        Width="480"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#0F172A">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="1"
+                Margin="24,0"
+                Background="White"
+                CornerRadius="16"
+                Padding="0">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="28" ShadowDepth="0" Opacity="0.35" Color="#000000"/>
+            </Border.Effect>
+
+            <Grid Margin="28,26">
+                <!-- Paso 1: bienvenida -->
+                <StackPanel x:Name="PanelBienvenida">
+                    <TextBlock Text="Bienvenido a Grunflex POS"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"/>
+                    <TextBlock Margin="0,10,0,0"
+                               FontSize="13"
+                               Foreground="#64748B"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               LineHeight="20">
+                        <Run Text="Para continuar necesita la licencia que recibirá al contratar el software. Si necesita ayuda, escriba a "/>
+                        <Hyperlink NavigateUri="mailto:soporte@grunflex.cl"
+                                   RequestNavigate="Soporte_RequestNavigate">
+                            soporte@grunflex.cl
+                        </Hyperlink>
+                        <Run Text="."/>
+                    </TextBlock>
+
+                    <Border Margin="0,16,0,8"
+                            Background="#F1F5F9"
+                            CornerRadius="8"
+                            Padding="10,8">
+                        <StackPanel>
+                            <TextBlock FontSize="11"
+                                       Foreground="#64748B"
+                                       Text="Identificador de este equipo (para soporte)"/>
+                            <TextBlock x:Name="TxtNombreEquipo"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#0F172A"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button x:Name="BtnContinuar"
+                            Margin="0,18,0,0"
+                            Height="46"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Content="Espere…"
+                            IsEnabled="False"
+                            Style="{StaticResource GreenButton}"
+                            Click="BtnContinuar_Click"/>
+
+                    <TextBlock Margin="0,14,0,0"
+                               FontSize="11"
+                               Foreground="#94A3B8"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               Text="Debe esperar unos segundos antes de continuar con la activación."/>
+                </StackPanel>
+
+                <!-- Paso 2: licencia -->
+                <StackPanel x:Name="PanelLicencia" Visibility="Collapsed">
+                    <TextBlock x:Name="TxtTituloLicencia"
+                               Text="Activar licencia"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#0F172A"/>
+                    <TextBlock x:Name="TxtBannerExpirada"
+                               Visibility="Collapsed"
+                               Margin="0,10,0,0"
+                               Padding="10,8"
+                               Background="#FEF2F2"
+                               Foreground="#B91C1C"
+                               TextWrapping="Wrap"
+                               FontSize="13"
+                               Text="Su licencia ha expirado. Ingrese una licencia vigente para volver a operar el POS."/>
+                    <TextBlock Margin="0,8,0,14"
+                               FontSize="13"
+                               Foreground="#64748B"
+                               TextWrapping="Wrap"
+                               Text="Pegue el código que le enviamos o seleccione el archivo .lic"/>
+
+                    <TextBox x:Name="TxtLicencia"
+                             Style="{StaticResource ModernTextBox}"
+                             Height="72"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="False"
+                             VerticalScrollBarVisibility="Auto"
+                             Margin="0,0,0,10"/>
+
+                    <Button Height="42"
+                            Margin="0,0,0,14"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Background="#EEF2FF"
+                           Foreground="#3730A3"
+                            BorderBrush="#C7D2FE"
+                            BorderThickness="1"
+                            Cursor="Hand"
+                            Content="Ya compré mi licencia — buscar archivo…"
+                            Click="BtnBuscarArchivo_Click"/>
+
+                    <Border Background="#F8FAFC" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Activación en línea (API)"
+                                       FontWeight="SemiBold"
+                                       Foreground="#334155"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock Text="Si tiene su código de activación (ActivationId), puede obtener la licencia GFv2 sin archivo."
+                                       FontSize="12"
+                                       Foreground="#64748B"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtActivationId"
+                                     Height="30"
+                                     Style="{StaticResource ModernTextBox}"
+                                     Margin="0,0,0,8"/>
+                            <Button Height="38"
+                                    Style="{StaticResource ModernButton}"
+                                    Content="Obtener licencia desde servidor"
+                                    Click="BtnActivarOnline_Click"/>
+                            <Button x:Name="BtnSincronizarServidor"
+                                    Height="38"
+                                    Margin="0,8,0,0"
+                                    Style="{StaticResource GreenButton}"
+                                    Visibility="Collapsed"
+                                    Content="Sincronizar licencia con servidor"
+                                    Click="BtnSincronizarServidor_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock x:Name="TxtErrorLicencia"
+                               Visibility="Collapsed"
+                               Margin="0,0,0,10"
+                               Foreground="#DC2626"
+                               FontSize="12"
+                               TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Width="110"
+                                Height="40"
+                                Margin="0,0,8,0"
+                                Content="Salir"
+                                Click="BtnSalir_Click"/>
+                        <Button Width="140"
+                                Height="40"
+                                Style="{StaticResource GreenButton}"
+                                Content="Activar"
+                                Click="BtnActivar_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

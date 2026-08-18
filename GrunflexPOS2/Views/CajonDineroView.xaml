@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.CajonDineroView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <StackPanel Margin="20">
+
+        <Border Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3" Margin="0,0,0,12">
+            <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+        </Border>
+
+        <TextBlock Text="CAJON/GAVETA DE DINERO"
+                   FontSize="34"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource PrimaryBrush}"
+                   Margin="0,0,0,12"/>
+
+        <TextBlock TextWrapping="Wrap"
+                   Margin="0,0,0,15"
+                   Text="Por favor elige el modelo de impresora a la cual está conectado el cajón/gaveta de dinero:"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+
+            <ComboBox x:Name="cmbPuerto"
+                      Width="320"
+                      Margin="0,0,10,0"
+                      SelectionChanged="CmbPuerto_SelectionChanged"/>
+
+        </StackPanel>
+
+        <Button Content="Probar Apertura del Cajon"
+                Width="220"
+                Click="BtnProbar_Click"
+                Style="{StaticResource MiniTopButton}"/>
+
+        <TextBlock x:Name="TxtEstado"
+                   Margin="0,10,0,0"
+                   Foreground="#404040"/>
+
+        <Border x:Name="BadgeResultado"
+                Background="#6B7280"
+                CornerRadius="4"
+                Padding="10,6"
+                HorizontalAlignment="Left"
+                Margin="0,8,0,0">
+            <TextBlock x:Name="TxtResultado"
+                       Text="Último intento: pendiente"
+                       Foreground="White"
+                       FontWeight="SemiBold"/>
+        </Border>
+
+    </StackPanel>
+</UserControl>

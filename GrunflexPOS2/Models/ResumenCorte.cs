@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace GrunflexPOS2.Models
 {
@@ -19,6 +19,12 @@ namespace GrunflexPOS2.Models
         public decimal TotalVentas { get; set; }
         public int TotalVentasRealizadas { get; set; }
         public int TotalArticulosVendidos { get; set; }
+
+        /// <summary>Movimientos de salida por consumo personal (sin ingreso en caja).</summary>
+        public int MovimientosConsumoPersonal { get; set; }
+
+        /// <summary>Unidades retiradas por consumo personal.</summary>
+        public int ArticulosConsumoPersonal { get; set; }
 
         // 🔹 Métodos de pago
         public decimal TotalEfectivo { get; set; }

@@ -1,0 +1,165 @@
+<Window x:Class="GrunflexPOS2.Views.ConectarServidorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Conectar a caja principal"
+        Width="640"
+        Height="540"
+        WindowStartupLocation="CenterOwner"
+        Background="#F9FAFB"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="TBrush" Color="#111827"/>
+        <SolidColorBrush x:Key="DBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="ABrush" Color="#1D4ED8"/>
+
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ABrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#D1D5DB"
+                                BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Conectar a caja principal"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TBrush}"/>
+            <TextBlock Text="Estamos buscando cajas principales activas en tu red. Esto puede tardar unos segundos."
+                       FontSize="12"
+                       Foreground="{StaticResource DBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,6,0,0"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,14,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="EstadoTxt" Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource DBrush}"
+                       Text=""/>
+            <Button x:Name="BtnReescanear" Grid.Column="1"
+                    Content="Volver a buscar"
+                    Style="{StaticResource SecondaryBtn}"
+                    Click="Reescanear_Click"/>
+        </Grid>
+
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="#E5E7EB"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="0">
+            <ListBox x:Name="ListaServidores"
+                     BorderThickness="0"
+                     SelectionMode="Single">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="6,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="36"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       Text="&#xE839;"
+                                       FontSize="20"
+                                       Foreground="{StaticResource ABrush}"
+                                       VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Server}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TBrush}"/>
+                                <TextBlock FontSize="12" Foreground="{StaticResource DBrush}">
+                                    <Run Text="IP: "/><Run Text="{Binding Ip}"/>
+                                    <Run Text="   ·   "/>
+                                    <Run Text="Versión "/><Run Text="{Binding Version}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <Separator Grid.Row="3" Margin="0,16,0,8"/>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       Text="Si no aparece, ingresa la IP del servidor manualmente:"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Foreground="{StaticResource DBrush}"
+                       Margin="0,0,10,0"/>
+            <TextBox x:Name="IpManualTxt"
+                     Grid.Column="1"
+                     Height="30"
+                     Padding="8,4"
+                     VerticalContentAlignment="Center"/>
+        </Grid>
+
+        <Grid Grid.Row="5" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1"
+                    Content="Cancelar"
+                    Style="{StaticResource SecondaryBtn}"
+                    Margin="0,0,8,0"
+                    Click="Cancelar_Click"/>
+            <Button x:Name="BtnConectar"
+                    Grid.Column="2"
+                    Content="Conectar a esta caja"
+                    Style="{StaticResource PrimaryBtn}"
+                    Click="Conectar_Click"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,124 +1,589 @@
-﻿<Window x:Class="GrunflexPOS2.Views.CobroView"
+<Window x:Class="GrunflexPOS2.Views.CobroView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Venta de Productos - Cobrar"
-        Height="450"
-        Width="850"
+        Height="640"
+        Width="1040"
+        MinHeight="560"
+        MinWidth="920"
         WindowStartupLocation="CenterScreen"
+        Background="#F8FAFC"
         PreviewKeyDown="Window_PreviewKeyDown">
 
-    <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="300" />
-        </Grid.ColumnDefinitions>
+    <Window.Resources>
+        <SolidColorBrush x:Key="CobroGreenBrush" Color="#10B981"/>
+        <SolidColorBrush x:Key="CobroGreenSoftBrush" Color="#ECFDF5"/>
+        <SolidColorBrush x:Key="CobroGreenBorderBrush" Color="#A7F3D0"/>
+        <SolidColorBrush x:Key="CobroRedBrush" Color="#EF4444"/>
+        <SolidColorBrush x:Key="CobroGrayDarkBrush" Color="#374151"/>
+        <SolidColorBrush x:Key="CobroMutedBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="CobroBarBrush" Color="#F1F5F9"/>
 
-        <!-- IZQUIERDA -->
-        <StackPanel Grid.Column="0">
+        <Style x:Key="CobroLabelCaps" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource CobroMutedBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
 
-            <TextBlock Text="COBRAR"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Foreground="#1F4E79" />
+        <Style x:Key="CobroSidebarActionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="54"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10"
+                                Padding="16,0">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.16" Direction="270"/>
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TextBlock x:Name="TxtTotalCobro"
-                       Text="$0"
-                       FontSize="36"
-                       FontWeight="Bold"
-                       Foreground="#1F4E79"
-                       Margin="0,10,0,20"/>
+        <Style x:Key="CobroInputBox" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="4,8"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
 
-            <!-- BOTONES MÉTODO (ACHICADOS) -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                <Button x:Name="BtnEfectivo"
-                        Content="Efectivo"
-                        Width="105"
-                        Height="34"
-                        FontSize="13"
-                        Margin="0,0,8,0"
-                        Click="MetodoPago_Click"/>
+        <Style x:Key="CobroMetodoBtnBase" TargetType="Button">
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-                <Button x:Name="BtnTarjeta"
-                        Content="Tarjeta"
-                        Width="105"
-                        Height="34"
-                        FontSize="13"
-                        Margin="0,0,8,0"
-                        Click="MetodoPago_Click"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-                <Button x:Name="BtnMixto"
-                        Content="Mixto"
-                        Width="105"
-                        Height="34"
-                        FontSize="13"
-                        Margin="0,0,8,0"
-                        Click="MetodoPago_Click"/>
+        <!-- Contenido principal -->
+        <Grid Grid.Row="0" Margin="28,24,28,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
 
-                <Button x:Name="BtnTransferencia"
-                        Content="Transferencia"
-                        Width="120"
-                        Height="34"
-                        FontSize="13"
-                        Click="MetodoPago_Click"/>
+            <!-- Izquierda: tarjeta cobro -->
+            <Border Grid.Column="0"
+                    Background="White"
+                    CornerRadius="14"
+                    Padding="28,24"
+                    Margin="0,0,20,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.12" Direction="270"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabecera COBRAR -->
+                    <Grid Grid.Row="0" Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0"
+                                Width="48" Height="48"
+                                CornerRadius="10"
+                                Background="{DynamicResource CobroPrimaryBrush}"
+                                VerticalAlignment="Top">
+                            <TextBlock x:Name="TxtCurrencyBadge"
+                                       Text="&#x20AC;"
+                                       FontSize="22"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="COBRAR"
+                                       FontSize="26"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource CobroPrimaryBrush}"/>
+                            <TextBlock Text="Ingrese el monto recibido"
+                                       FontSize="13"
+                                       Foreground="{StaticResource CobroMutedBrush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Total a cobrar -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,22">
+                        <TextBlock Text="TOTAL A COBRAR" Style="{StaticResource CobroLabelCaps}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="TxtTotalCobro"
+                                       Grid.Column="0"
+                                       Text="$0"
+                                       FontSize="40"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource CobroPrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <Grid Grid.Column="1" Width="56" Height="56" VerticalAlignment="Center">
+                                <Ellipse Fill="{DynamicResource CobroPrimarySoftBrush}"/>
+                                <TextBlock Text="&#xE8E8;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="22"
+                                           Foreground="{DynamicResource CobroPrimaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Método de pago -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,18">
+                        <TextBlock Text="MÉTODO DE PAGO" Style="{StaticResource CobroLabelCaps}"/>
+                        <UniformGrid Rows="1" Columns="3" Margin="0,0,0,8">
+                            <Button x:Name="BtnEfectivo"
+                                    Tag="Efectivo"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Margin="0,0,8,0"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE825;" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Efectivo" Margin="8,0,0,0" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnTarjeta"
+                                    Tag="Tarjeta"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Margin="0,0,8,0"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE8E8;" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Tarjeta" Margin="8,0,0,0" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnMixto"
+                                    Tag="Mixto"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mixto" Margin="8,0,0,0" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </UniformGrid>
+                        <WrapPanel x:Name="PanelMetodosExtra" Margin="0,4,0,0">
+                            <Button x:Name="BtnTransferencia"
+                                    Tag="Transferencia"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Width="142"
+                                    Margin="0,0,8,8"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <TextBlock Text="Transferencia" FontSize="13" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button x:Name="BtnCheque"
+                                    Tag="Cheque"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Width="118"
+                                    Margin="0,0,8,8"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <TextBlock Text="Cheque" FontSize="13" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button x:Name="BtnVales"
+                                    Tag="Vales"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Width="108"
+                                    Margin="0,0,8,8"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <TextBlock Text="Vales" FontSize="13" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button x:Name="BtnDolares"
+                                    Tag="Dolares"
+                                    Style="{StaticResource CobroMetodoBtnBase}"
+                                    Height="46"
+                                    Width="122"
+                                    Margin="0,0,8,8"
+                                    Click="MetodoPago_Click"
+                                    Cursor="Hand">
+                                <TextBlock Text="Dólares" FontSize="13" FontWeight="SemiBold"/>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <!-- Montos por método -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,16">
+                        <TextBlock x:Name="LblMontoRecibido" Text="MONTO RECIBIDO" Style="{StaticResource CobroLabelCaps}"/>
+
+                        <StackPanel x:Name="PanelEfectivo" Visibility="Collapsed">
+                            <Border Background="White"
+                                    BorderBrush="#E5E7EB"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="14,4,16,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="&#xE825;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="20"
+                                               Foreground="{DynamicResource CobroPrimaryBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,12,0"/>
+                                    <TextBox x:Name="TxtEfectivo"
+                                             Grid.Column="1"
+                                             Style="{StaticResource CobroInputBox}"
+                                             TextChanged="TxtEfectivo_TextChanged"/>
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="Ingrese el monto entregado por el cliente"
+                                       FontSize="12"
+                                       Foreground="{StaticResource CobroMutedBrush}"
+                                       Margin="2,8,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="PanelTarjeta" Visibility="Collapsed">
+                            <Border Background="White"
+                                    BorderBrush="#E5E7EB"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="14,4,16,4">
+                                <TextBox x:Name="TxtTarjeta"
+                                         Style="{StaticResource CobroInputBox}"/>
+                            </Border>
+                            <TextBlock Text="Referencia o últimos dígitos (opcional)"
+                                       FontSize="12"
+                                       Foreground="{StaticResource CobroMutedBrush}"
+                                       Margin="2,8,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="PanelMixto" Visibility="Collapsed">
+                            <TextBlock Text="Efectivo" FontSize="12" Foreground="{StaticResource CobroMutedBrush}" Margin="0,0,0,4"/>
+                            <Border Background="White"
+                                    BorderBrush="#E5E7EB"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="12,4,14,4"
+                                    Margin="0,0,0,10">
+                                <TextBox x:Name="TxtMixtoEfectivo"
+                                         Style="{StaticResource CobroInputBox}"
+                                         FontSize="18"
+                                         TextChanged="TxtMixto_TextChanged"/>
+                            </Border>
+                            <TextBlock Text="Tarjeta / transferencia" FontSize="12" Foreground="{StaticResource CobroMutedBrush}" Margin="0,0,0,4"/>
+                            <Border Background="White"
+                                    BorderBrush="#E5E7EB"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="12,4,14,4">
+                                <TextBox x:Name="TxtMixtoTarjeta"
+                                         Style="{StaticResource CobroInputBox}"
+                                         FontSize="18"
+                                         TextChanged="TxtMixto_TextChanged"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Cambio -->
+                    <Border Grid.Row="4"
+                            Background="{StaticResource CobroGreenSoftBrush}"
+                            BorderBrush="{StaticResource CobroGreenBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="16,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Width="40" Height="40"
+                                    CornerRadius="8"
+                                    Background="{StaticResource CobroGreenBrush}"
+                                    VerticalAlignment="Top"
+                                    Margin="0,0,14,0">
+                                <TextBlock Text="&#xE8CC;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="18"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="CAMBIO"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource CobroGreenBrush}"/>
+                                <TextBlock x:Name="TxtCambio"
+                                           Text="$0"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource CobroGreenBrush}"
+                                           Margin="0,2,0,0"/>
+                                <TextBlock Text="Se calculará automáticamente"
+                                           FontSize="12"
+                                           Foreground="{StaticResource CobroGreenBrush}"
+                                           Opacity="0.85"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Derecha: acciones -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                <Button Style="{StaticResource CobroSidebarActionButton}"
+                        Background="{StaticResource CobroGreenBrush}"
+                        Click="BtnCobrarImprimir_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE749;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="F1 - Cobrar e imprimir"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <Button Style="{StaticResource CobroSidebarActionButton}"
+                        Background="{DynamicResource CobroPrimaryBrush}"
+                        Click="BtnCobrarSinImprimir_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE8E8;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="F2 - Cobrar sin imprimir"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <Button Style="{StaticResource CobroSidebarActionButton}"
+                        Background="{StaticResource CobroGrayDarkBrush}"
+                        Click="BtnConsumoPersonal_Click"
+                        ToolTip="Descuenta inventario sin ingreso en caja; figura en reportes y corte como consumo personal.">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE77B;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="F3 - Marcar como consumo personal"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <Button Style="{StaticResource CobroSidebarActionButton}"
+                        Margin="0,0,0,8"
+                        Background="{StaticResource CobroRedBrush}"
+                        Click="BtnCancelar_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE711;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="ESC - Cancelar"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <!-- Pago seguro -->
+                <Border Background="{DynamicResource CobroSecurityBgBrush}"
+                        BorderBrush="{DynamicResource CobroSecurityBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="14,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE72E;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource CobroPrimaryBrush}"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Top"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Pago seguro"
+                                       FontWeight="Bold"
+                                       FontSize="14"
+                                       Foreground="{DynamicResource CobroPrimaryBrush}"/>
+                            <TextBlock Text="Verifique el monto recibido antes de confirmar el cobro."
+                                       FontSize="12"
+                                       Foreground="{DynamicResource CobroPrimaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Opacity="0.9"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </StackPanel>
+        </Grid>
 
-            <!-- PANEL EFECTIVO -->
-            <StackPanel x:Name="PanelEfectivo" Visibility="Collapsed">
-                <TextBlock Text="Efectivo:"/>
-                <TextBox x:Name="TxtEfectivo"
-                         Height="30"
-                         Width="240"
-                         TextChanged="TxtEfectivo_TextChanged"/>
-            </StackPanel>
+        <!-- Barra resumen inferior -->
+        <Border Grid.Row="1"
+                Background="{StaticResource CobroBarBrush}"
+                BorderBrush="#E2E8F0"
+                BorderThickness="0,1,0,0"
+                Padding="28,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- PANEL TARJETA / TRANSFERENCIA -->
-            <StackPanel x:Name="PanelTarjeta" Visibility="Collapsed">
-                <TextBlock Text="Tarjeta / Transferencia:"/>
-                <TextBox x:Name="TxtTarjeta"
-                         Height="30"
-                         Width="240"/>
-            </StackPanel>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Grid Width="44" Height="44" VerticalAlignment="Top">
+                        <Ellipse Fill="{DynamicResource CobroPrimarySoftBrush}"/>
+                        <TextBlock Text="&#xE7BF;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="{DynamicResource CobroPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Margin="12,0,0,0">
+                        <TextBlock Text="TOTAL DE ARTÍCULOS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource CobroMutedBrush}"/>
+                        <TextBlock x:Name="TxtTotalArticulos" Text="0" FontSize="22" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                        <TextBlock Text="Unidades vendidas" FontSize="12" Foreground="{StaticResource CobroMutedBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
 
-            <!-- PANEL MIXTO -->
-            <StackPanel x:Name="PanelMixto" Visibility="Collapsed">
-                <TextBlock Text="Efectivo:"/>
-                <TextBox x:Name="TxtMixtoEfectivo"
-                         Height="30"
-                         Width="240"
-                         Margin="0,0,0,10"
-                         TextChanged="TxtMixto_TextChanged"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0">
+                    <Grid Width="44" Height="44" VerticalAlignment="Top">
+                        <Ellipse Fill="#FEF3C7"/>
+                        <TextBlock Text="&#xE8CB;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="#D97706"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Margin="12,0,0,0">
+                        <TextBlock Text="DESCUENTOS APLICADOS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource CobroMutedBrush}"/>
+                        <TextBlock x:Name="TxtDescuentosBarra" Text="0,00 €" FontSize="22" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                        <TextBlock Text="Total en descuentos" FontSize="12" Foreground="{StaticResource CobroMutedBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
 
-                <TextBlock Text="Tarjeta / Transferencia:"/>
-                <TextBox x:Name="TxtMixtoTarjeta"
-                         Height="30"
-                         Width="240"/>
-            </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0,0,0">
+                    <Grid Width="44" Height="44" VerticalAlignment="Top">
+                        <Ellipse Fill="{DynamicResource CobroPrimarySoftBrush}"/>
+                        <TextBlock Text="&#xE825;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="{DynamicResource CobroPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Margin="12,0,0,0">
+                        <TextBlock Text="TOTAL A COBRAR" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource CobroMutedBrush}"/>
+                        <TextBlock x:Name="TxtTotalBarra" Text="0,00 €" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource CobroPrimaryBrush}" Margin="0,4,0,0"/>
+                        <TextBlock Text="Monto final" FontSize="12" Foreground="{StaticResource CobroMutedBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
 
-            <TextBlock Text="Cambio:"
-                       Margin="0,20,0,0"/>
-            <TextBlock x:Name="TxtCambio"
-                       Text="$0"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       Foreground="Green"/>
-        </StackPanel>
-
-        <!-- DERECHA -->
-        <StackPanel Grid.Column="1" VerticalAlignment="Top">
-
-            <Button Content="F1 - Cobrar e imprimir"
-                    Height="50"
-                    Margin="0,0,0,10"
-                    Click="BtnCobrarImprimir_Click"/>
-
-            <Button Content="F2 - Cobrar sin imprimir"
-                    Height="50"
-                    Margin="0,0,0,10"
-                    Click="BtnCobrarSinImprimir_Click"/>
-
-            <Button Content="ESC - Cancelar"
-                    Height="50"
-                    Click="BtnCancelar_Click"/>
-        </StackPanel>
+                <Image Grid.Column="3"
+                       Source="pack://application:,,,/Assets/icons/cajero-automatico.png"
+                       Width="120"
+                       Height="120"
+                       Stretch="Uniform"
+                       VerticalAlignment="Center"
+                       Margin="24,0,0,0"
+                       Opacity="0.95"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace GrunflexPOS2.Models.Entities
@@ -29,5 +29,13 @@ namespace GrunflexPOS2.Models.Entities
         public bool EstaAnulada { get; set; }
 
         public DateTime? FechaAnulacion { get; set; }
+
+        // 🔑 NUEVO — TRAZABILIDAD
+        public Guid UsuarioId { get; set; }
+
+        public Guid CajaSesionId { get; set; }
+
+        /// <summary>No suma en cortes ni ingresos de caja; sirve para auditoría de consumo interno.</summary>
+        public bool EsConsumoPersonal { get; set; }
     }
 }

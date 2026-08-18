@@ -1,0 +1,138 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.BaseDatosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+        <StackPanel Margin="20">
+            <Border Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3" Margin="0,0,0,12">
+                <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+            </Border>
+
+            <!-- 🔥 TÍTULO -->
+            <TextBlock Text="GRUNFLEX POS"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryBrush}"
+                       Margin="0,0,0,10"/>
+
+            <TextBlock Text="BASE DE DATOS"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,20"/>
+
+            <!-- 🔹 EXPORTAR -->
+            <TextBlock Text="Exportar base de datos"
+                       FontWeight="Bold"/>
+
+            <TextBlock Text="Permite exportar la base de datos del sistema Grunflex POS para respaldo o migración."
+                       TextWrapping="Wrap"
+                       Margin="0,5,0,10"/>
+
+            <Button Content="Exportar base de datos"
+                    Width="250"
+                    Margin="0,0,0,20"
+                    Click="BtnExportarBaseDatos_Click"
+                    Style="{StaticResource MiniTopButton}"/>
+
+            <!-- 🔹 SOPORTE -->
+            <TextBlock Text="Soporte de base de datos"
+                       FontWeight="Bold"
+                       Margin="0,10,0,10"/>
+
+            <WrapPanel>
+
+                <Button Content="Verificar base de datos"
+                        Width="220"
+                        Click="BtnVerificarBaseDatos_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+
+                <Button x:Name="BtnReinicializarBaseDatos"
+                        Content="Reinicializar base de datos"
+                        Width="220"
+                        Click="BtnReinicializarBaseDatos_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+
+                <Button Content="Respaldar base de datos"
+                        Width="220"
+                        Click="BtnRespaldarBaseDatos_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+
+                <Button x:Name="BtnRestaurarBaseDatos"
+                        Content="Restaurar base de datos"
+                        Width="220"
+                        Click="BtnRestaurarBaseDatos_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+
+            </WrapPanel>
+
+            <!-- 🔹 SNAPSHOTS AUTOMÁTICOS (Fase 3.1) -->
+            <TextBlock Text="Snapshots automáticos"
+                       FontWeight="Bold"
+                       Margin="0,30,0,6"/>
+            <TextBlock TextWrapping="Wrap"
+                       Margin="0,0,0,10"
+                       Text="El sistema crea respaldos automáticos cada 6 horas y mantiene 7 diarios + 4 semanales + 6 mensuales (los manuales nunca se borran)."/>
+
+            <WrapPanel Margin="0,0,0,10">
+                <Button Content="Crear snapshot ahora"
+                        Width="220"
+                        Click="BtnCrearSnapshot_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+                <Button Content="Refrescar lista"
+                        Width="180"
+                        Click="BtnRefrescarSnapshots_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+                <Button Content="Abrir carpeta"
+                        Width="160"
+                        Click="BtnAbrirCarpetaBackups_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+            </WrapPanel>
+
+            <Border BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    Background="White"
+                    CornerRadius="6"
+                    Padding="6">
+                <ListView x:Name="ListaSnapshots"
+                          Height="240"
+                          BorderThickness="0">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Fecha" Width="150" DisplayMemberBinding="{Binding CreatedDisplay}"/>
+                            <GridViewColumn Header="Tipo"  Width="100" DisplayMemberBinding="{Binding Kind}"/>
+                            <GridViewColumn Header="Tamaño" Width="90" DisplayMemberBinding="{Binding SizeDisplay}"/>
+                            <GridViewColumn Header="Archivo" Width="320" DisplayMemberBinding="{Binding FileName}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Border>
+
+            <WrapPanel Margin="0,8,0,0">
+                <Button Content="Verificar seleccionado"
+                        Width="200"
+                        Click="BtnVerificarSnapshot_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+                <Button x:Name="BtnRestaurarSnapshot"
+                        Content="Restaurar seleccionado"
+                        Width="200"
+                        Click="BtnRestaurarSnapshot_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+                <Button Content="Eliminar seleccionado"
+                        Width="200"
+                        Click="BtnEliminarSnapshot_Click"
+                        Style="{StaticResource MiniTopButton}"/>
+            </WrapPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

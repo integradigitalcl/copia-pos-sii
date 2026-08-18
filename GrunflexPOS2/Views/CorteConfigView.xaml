@@ -1,0 +1,114 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.CorteConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <Grid Margin="20">
+
+        <StackPanel MaxWidth="720">
+
+            <!-- HEADER -->
+            <Border Background="{StaticResource PrimaryGradientBrush}" MinHeight="40" CornerRadius="3">
+                <TextBlock Text="CONFIGURACIÓN"
+                           Foreground="White"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Margin="10,8"/>
+            </Border>
+
+            <Button Content="🏠 Mostrar todas las opciones"
+                    Margin="0,10,0,20"
+                    MinWidth="180"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource MiniTopButton}"/>
+
+            <!-- TÍTULO -->
+            <TextBlock Text="CORTE"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryBrush}"
+                       Margin="0,0,0,20"/>
+
+            <!-- OPCIÓN 1 -->
+            <RadioButton Content="Solicitar dinero esperado en caja y ajustar automáticamente"
+                         IsChecked="True"
+                         FontWeight="SemiBold"/>
+
+            <TextBlock Text="El sistema compara el efectivo esperado con el ingresado y genera ajustes automáticamente."
+                       TextWrapping="Wrap"
+                       Margin="20,5,0,15"
+                       Foreground="Gray"/>
+
+            <Border BorderBrush="{StaticResource PanelBorderBrush}" Background="White" CornerRadius="6" BorderThickness="1"
+                    MaxWidth="320" MinHeight="80" Margin="20,0,0,20" HorizontalAlignment="Left">
+                <TextBlock Text="Vista previa cierre de turno"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Foreground="Gray"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="12"/>
+            </Border>
+
+            <!-- OPCIÓN 2 -->
+            <RadioButton Content="No solicitar dinero en caja ni realizar ajustes"
+                         Margin="0,10,0,0"
+                         FontWeight="SemiBold"/>
+
+            <TextBlock Text="El sistema no pedirá efectivo ni generará movimientos."
+                       TextWrapping="Wrap"
+                       Margin="20,5,0,15"
+                       Foreground="Gray"/>
+
+            <Border BorderBrush="{StaticResource PanelBorderBrush}" Background="White" CornerRadius="6" BorderThickness="1"
+                    MaxWidth="320" MinHeight="64" Margin="20,0,0,20" HorizontalAlignment="Left">
+                <TextBlock Text="Cierre simple"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Foreground="Gray"/>
+            </Border>
+
+            <!-- LÍMITE -->
+            <TextBlock Text="Límite de efectivo en caja"
+                       FontWeight="Bold"
+                       Margin="0,10,0,10"/>
+
+            <WrapPanel Orientation="Horizontal">
+
+                <ComboBox Width="150" MinWidth="120" Margin="0,0,10,8">
+                    <ComboBoxItem Content="Ignorar"/>
+                    <ComboBoxItem Content="Bloquear"/>
+                </ComboBox>
+
+                <TextBlock Text="cuando supere"
+                           Margin="0,5,10,8"
+                           VerticalAlignment="Top"/>
+
+                <TextBox Width="100" MinWidth="80" Text="$0" Margin="0,0,0,8"/>
+
+            </WrapPanel>
+
+            <TextBlock Text="Mensaje al cajero:"
+                       Margin="0,10,0,5"/>
+
+            <TextBox MinHeight="60"
+                     MaxWidth="520"
+                     TextWrapping="Wrap"
+                     Text="Por favor realiza un retiro de efectivo (F8), se ha excedido el límite."/>
+
+        </StackPanel>
+
+    </Grid>
+    </ScrollViewer>
+</UserControl>

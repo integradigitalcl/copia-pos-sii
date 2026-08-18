@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.IO;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace GrunflexPOS2.Data
@@ -7,12 +8,14 @@ namespace GrunflexPOS2.Data
     {
         public GrunflexDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<GrunflexDbContext>();
+            LocalDatabasePaths.EnsureDataDirectoryExists();
+            var dbPath = Path.Combine(LocalDatabasePaths.DataDirectory, "design_grunflex.db");
+            var cs = $"Data Source={dbPath}";
+            var options = new DbContextOptionsBuilder<GrunflexDbContext>()
+                .UseSqlite(cs)
+                .Options;
 
-            optionsBuilder.UseNpgsql(
-                "Host=192.168.100.17;Port=5432;Database=grunflexpos2;Username=postgres;Password=2106");
-
-            return new GrunflexDbContext(optionsBuilder.Options);
+            return new GrunflexDbContext(options);
         }
     }
 }

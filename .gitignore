@@ -361,3 +361,39 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Inno Setup staging / salida del instalador (no subir a GitHub)
+ops/installer/staging/
+ops/installer/out/
+ops/installer/out-internal/
+ops/installer-internal/staging/
+ops/installer-internal/out/
+ops/posedgesetup/**/staging/
+ops/posedgesetup/**/out/
+ops/posedgesetup/INSTALLERS-*.txt
+ops/patch-ui/out/
+ops/patch-ui/*.zip
+ops/patch-youtube/out/
+ops/patch-youtube/*.zip
+ops/multicaja/out/
+ops/multicaja/**/bin/
+ops/multicaja/**/obj/
+
+# Publicaciones / deploys locales
+deploy/
+*Setup*.exe
+
+# Secrets y config local
+**/appsettings.local.json
+**/*.pem
+**/*.lic
+**/*.snk
+.env
+.env.*
+
+# Python / logs / caches locales
+.venv/
+logs/
+*.db
+*.db-shm
+*.db-wal

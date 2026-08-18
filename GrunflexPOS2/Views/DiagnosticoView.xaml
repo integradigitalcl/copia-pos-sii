@@ -1,0 +1,210 @@
+<Window x:Class="GrunflexPOS2.Views.DiagnosticoView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:diag="clr-namespace:GrunflexPOS2.Diagnostics"
+        Title="Diagnóstico del sistema"
+        Height="720"
+        Width="980"
+        WindowStartupLocation="CenterOwner"
+        Background="#F9FAFB">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <diag:InvertBoolConverter x:Key="InvertBool"/>
+        <SolidColorBrush x:Key="TitleBrush" Color="#111827"/>
+        <SolidColorBrush x:Key="DescBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="CardBgBrush" Color="White"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E5E7EB"/>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="8"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="DiagItemTemplate">
+            <Border Margin="0,0,0,10"
+                    Background="{StaticResource CardBgBrush}"
+                    BorderBrush="{StaticResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="14,12">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   Text="{Binding StatusIcon}"
+                                   FontSize="20"
+                                   Foreground="{Binding StatusColor}"
+                                   VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TitleBrush}"/>
+                            <TextBlock Text="{Binding Summary}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource DescBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="2"
+                                Content="Reparar"
+                                Style="{StaticResource PrimaryButton}"
+                                Margin="6,0,6,0"
+                                Padding="12,6"
+                                FontSize="12"
+                                Visibility="{Binding CanAutoFix, Converter={StaticResource BoolToVis}}"
+                                IsEnabled="{Binding IsFixing, Converter={StaticResource InvertBool}}"
+                                Click="Fix_Click"
+                                Tag="{Binding}"/>
+
+                        <ToggleButton Grid.Column="3"
+                                      Content="Detalle"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                      Padding="10,5"
+                                      Background="Transparent"
+                                      BorderBrush="#D1D5DB"
+                                      BorderThickness="1"
+                                      FontSize="12"/>
+                    </Grid>
+
+                    <Border Margin="38,10,0,0"
+                            Background="#F3F4F6"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding TechnicalDetails}"
+                                   FontFamily="Consolas"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="#374151"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="24,20,24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Diagnóstico del sistema"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TitleBrush}"/>
+            <TextBlock Text="Detectamos problemas comunes y te decimos cómo solucionarlos. Si algo está en rojo, presiona Reparar."
+                       FontSize="13"
+                       Foreground="{StaticResource DescBrush}"
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="1" Margin="0,16,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ProgressBar x:Name="ProgresoGlobal"
+                         Grid.Column="0"
+                         Height="6"
+                         Minimum="0"
+                         Maximum="100"
+                         Value="0"
+                         Margin="0,0,16,0"
+                         Foreground="{StaticResource AccentBrush}"
+                         Background="#E5E7EB"
+                         VerticalAlignment="Center"
+                         BorderThickness="0"/>
+
+            <Button Grid.Column="1"
+                    Content="Reparar todo"
+                    Style="{StaticResource SecondaryButton}"
+                    Margin="0,0,8,0"
+                    Click="RepararTodo_Click"
+                    x:Name="BtnRepararTodo"/>
+
+            <Button Grid.Column="2"
+                    Content="Copiar reporte"
+                    Style="{StaticResource SecondaryButton}"
+                    Margin="0,0,8,0"
+                    Click="Copiar_Click"/>
+
+            <Button Grid.Column="3"
+                    Content="Volver a comprobar"
+                    Style="{StaticResource PrimaryButton}"
+                    Click="Recheck_Click"
+                    x:Name="BtnRecheck"/>
+        </Grid>
+
+        <!-- Lista -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="Lista" ItemTemplate="{StaticResource DiagItemTemplate}"/>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <TextBlock Grid.Row="3"
+                   x:Name="EstadoGlobal"
+                   FontSize="12"
+                   Foreground="{StaticResource DescBrush}"
+                   Margin="0,10,0,0"
+                   Text=""/>
+    </Grid>
+</Window>

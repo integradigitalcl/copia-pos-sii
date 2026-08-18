@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="Grunflex.Licensing.Abstractions/Grunflex.Licensing.Abstractions.csproj" />
+  <Project Path="Grunflex.LicenseIssuer/Grunflex.LicenseIssuer.csproj" />
+  <Project Path="GrunflexPOS.LicenseManager/GrunflexPOS.LicenseManager.csproj" />
+  <Project Path="GrunflexPOS.API/GrunflexPOS.API.csproj" Id="3ac7b57c-ac2e-4ac4-b27f-b5b4805001e9" />
   <Project Path="GrunflexPOS2/GrunflexPOS2.csproj" />
 </Solution>

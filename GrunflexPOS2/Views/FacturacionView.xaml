@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.FacturacionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="White">
+
+    <Grid Margin="20">
+
+        <StackPanel>
+
+            <!-- 🔵 BARRA SUPERIOR -->
+            <Border Background="#0A2A66"
+                    Height="40"
+                    VerticalAlignment="Top">
+
+                <TextBlock Text="CONFIGURACIÓN"
+                           Foreground="White"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Margin="10,0"/>
+            </Border>
+
+            <!-- BOTÓN -->
+            <Button Content="🏠 Mostrar todas las opciones"
+                    Margin="0,10,0,20"
+                    Width="220"
+                    Height="30"/>
+
+            <!-- TÍTULO -->
+            <TextBlock Text="FACTURACIÓN ELECTRÓNICA"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Margin="0,0,0,15"/>
+
+            <!-- DESCRIPCIÓN -->
+            <TextBlock Text="Con Grunflex POS puedes realizar tus facturas electrónicas fácilmente. Para comenzar haz clic en:"
+                       TextWrapping="Wrap"
+                       FontSize="14"
+                       Margin="0,0,0,20"/>
+
+            <!-- BOTÓN PRINCIPAL -->
+            <Button Width="320"
+                    Height="45"
+                    HorizontalAlignment="Left">
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                    <!-- ICONO (simulado) -->
+                    <TextBlock Text="▦"
+                               FontSize="18"
+                               Margin="0,0,10,0"/>
+
+                    <TextBlock Text="Configurar Facturación Electrónica..."
+                               FontSize="14"
+                               VerticalAlignment="Center"/>
+
+                </StackPanel>
+            </Button>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

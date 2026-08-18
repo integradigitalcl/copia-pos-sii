@@ -1,0 +1,6 @@
+@GrunflexPOS.API_HostAddress = http://localhost:7279
+
+GET {{GrunflexPOS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

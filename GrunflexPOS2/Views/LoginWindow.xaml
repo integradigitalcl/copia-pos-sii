@@ -1,0 +1,513 @@
+<Window x:Class="GrunflexPOS2.Views.LoginWindow"
+
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
+        Title="Grunflex POS"
+
+        MinHeight="560"
+
+        MinWidth="400"
+
+        Height="720"
+
+        Width="480"
+
+        WindowStartupLocation="CenterScreen"
+
+        ResizeMode="CanResizeWithGrip"
+
+        Background="#FFFFFF"
+
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+
+
+    <Window.Resources>
+
+        <SolidColorBrush x:Key="LoginAccentDimBrush" Color="#CBD5E1"/>
+
+        <SolidColorBrush x:Key="LoginFieldBgBrush" Color="#FFFFFF"/>
+
+        <SolidColorBrush x:Key="LoginHintBrush" Color="#94A3B8"/>
+
+        <SolidColorBrush x:Key="LoginTextBrush" Color="#0F172A"/>
+
+        <Style x:Key="LoginFieldLabel" TargetType="TextBlock">
+
+            <Setter Property="FontSize" Value="11"/>
+
+            <Setter Property="FontWeight" Value="SemiBold"/>
+
+            <Setter Property="Foreground" Value="{DynamicResource LoginAccentBrush}"/>
+
+            <Setter Property="Margin" Value="2,0,0,8"/>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginFieldIcon" TargetType="TextBlock">
+
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+
+            <Setter Property="FontSize" Value="14"/>
+
+            <Setter Property="Foreground" Value="{DynamicResource LoginAccentBrush}"/>
+
+            <Setter Property="VerticalAlignment" Value="Center"/>
+
+            <Setter Property="Margin" Value="0,0,6,0"/>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginInputIcon" TargetType="TextBlock">
+
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+
+            <Setter Property="FontSize" Value="15"/>
+
+            <Setter Property="Foreground" Value="#94A3B8"/>
+
+            <Setter Property="VerticalAlignment" Value="Center"/>
+
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+
+            <Setter Property="Margin" Value="0,0,14,0"/>
+
+            <Setter Property="IsHitTestVisible" Value="False"/>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginDarkTextBox" TargetType="TextBox">
+
+            <Setter Property="FontSize" Value="15"/>
+
+            <Setter Property="Height" Value="48"/>
+
+            <Setter Property="Padding" Value="16,0,42,0"/>
+
+            <Setter Property="Foreground" Value="{StaticResource LoginTextBrush}"/>
+
+            <Setter Property="CaretBrush" Value="{DynamicResource LoginAccentBrush}"/>
+
+            <Setter Property="Background" Value="{StaticResource LoginFieldBgBrush}"/>
+
+            <Setter Property="BorderBrush" Value="{StaticResource LoginAccentDimBrush}"/>
+
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="TextBox">
+
+                        <Border x:Name="Border"
+
+                                Background="{TemplateBinding Background}"
+
+                                BorderBrush="{TemplateBinding BorderBrush}"
+
+                                BorderThickness="{TemplateBinding BorderThickness}"
+
+                                CornerRadius="10">
+
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource LoginAccentBrush}"/>
+
+                                <Setter TargetName="Border" Property="BorderThickness" Value="1.5"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginDarkPasswordBox" TargetType="PasswordBox">
+
+            <Setter Property="FontSize" Value="15"/>
+
+            <Setter Property="Height" Value="48"/>
+
+            <Setter Property="Padding" Value="16,0,42,0"/>
+
+            <Setter Property="Foreground" Value="{StaticResource LoginTextBrush}"/>
+
+            <Setter Property="Background" Value="{StaticResource LoginFieldBgBrush}"/>
+
+            <Setter Property="BorderBrush" Value="{StaticResource LoginAccentDimBrush}"/>
+
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="PasswordBox">
+
+                        <Border x:Name="Bd"
+
+                                Background="{TemplateBinding Background}"
+
+                                BorderBrush="{TemplateBinding BorderBrush}"
+
+                                BorderThickness="{TemplateBinding BorderThickness}"
+
+                                CornerRadius="10">
+
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="2"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource LoginAccentBrush}"/>
+
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginIngresarButton" TargetType="Button">
+
+            <Setter Property="Foreground" Value="White"/>
+
+            <Setter Property="FontSize" Value="17"/>
+
+            <Setter Property="FontWeight" Value="Bold"/>
+
+            <Setter Property="Height" Value="52"/>
+
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="BorderBrush" Value="#93C5FD"/>
+
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="Background" Value="{DynamicResource LoginButtonGradientBrush}"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="Bd"
+
+                                Background="{TemplateBinding Background}"
+
+                                BorderBrush="{TemplateBinding BorderBrush}"
+
+                                BorderThickness="{TemplateBinding BorderThickness}"
+
+                                CornerRadius="12"
+
+                                Padding="16,0">
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PrimaryGradientHoverBrush}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.92"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+
+
+        <Style x:Key="LoginTogglePasswordButton" TargetType="Button">
+
+            <Setter Property="Width" Value="36"/>
+
+            <Setter Property="Height" Value="36"/>
+
+            <Setter Property="Background" Value="Transparent"/>
+
+            <Setter Property="BorderThickness" Value="0"/>
+
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+
+            <Setter Property="VerticalAlignment" Value="Center"/>
+
+            <Setter Property="Margin" Value="0,0,8,0"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8">
+
+                            <TextBlock x:Name="Icon"
+
+                                       Text="&#xE890;"
+
+                                       FontFamily="Segoe MDL2 Assets"
+
+                                       FontSize="15"
+
+                                       Foreground="#64748B"
+
+                                       HorizontalAlignment="Center"
+
+                                       VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver" Value="True">
+
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource LoginAccentBrush}"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
+        </Style>
+
+    </Window.Resources>
+
+
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+
+                  HorizontalScrollBarVisibility="Disabled"
+
+                  HorizontalAlignment="Center"
+
+                  VerticalAlignment="Center"
+
+                  MaxWidth="420"
+
+                  Margin="32,24">
+
+        <StackPanel Margin="8,8,8,12">
+
+
+
+            <Image Source="/Assets/logo_login.png"
+
+                   Stretch="Uniform"
+
+                   MaxHeight="132"
+
+                   MaxWidth="340"
+
+                   HorizontalAlignment="Center"
+
+                   Margin="0,0,0,20"
+
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
+
+
+
+            <TextBlock Text="Inicie sesi&#243;n para abrir la caja"
+
+                       FontSize="14"
+
+                       Foreground="#475569"
+
+                       TextAlignment="Center"
+
+                       Margin="0,0,0,26"/>
+
+
+
+            <!-- Usuario -->
+
+            <StackPanel Orientation="Horizontal">
+
+                <TextBlock Text="&#xE77B;" Style="{StaticResource LoginFieldIcon}"/>
+
+                <TextBlock Text="USUARIO" Style="{StaticResource LoginFieldLabel}" Margin="0,0,0,8"/>
+
+            </StackPanel>
+
+            <Grid Margin="0,0,0,16">
+
+                <TextBox x:Name="txtUsuario"
+
+                         Style="{StaticResource LoginDarkTextBox}"/>
+
+                <TextBlock Text="Ingrese su usuario"
+
+                           Foreground="{StaticResource LoginHintBrush}"
+
+                           Margin="18,0,42,0"
+
+                           VerticalAlignment="Center"
+
+                           IsHitTestVisible="False">
+
+                    <TextBlock.Style>
+
+                        <Style TargetType="TextBlock">
+
+                            <Setter Property="Visibility" Value="Collapsed"/>
+
+                            <Style.Triggers>
+
+                                <DataTrigger Binding="{Binding Text, ElementName=txtUsuario}" Value="">
+
+                                    <Setter Property="Visibility" Value="Visible"/>
+
+                                </DataTrigger>
+
+                            </Style.Triggers>
+
+                        </Style>
+
+                    </TextBlock.Style>
+
+                </TextBlock>
+
+                <TextBlock Text="&#xE77B;" Style="{StaticResource LoginInputIcon}"/>
+
+            </Grid>
+
+
+
+            <!-- Contraseña -->
+
+            <StackPanel Orientation="Horizontal">
+
+                <TextBlock Text="&#xE72E;" Style="{StaticResource LoginFieldIcon}"/>
+
+                <TextBlock Text="CONTRASE&#209;A" Style="{StaticResource LoginFieldLabel}" Margin="0,0,0,8"/>
+
+            </StackPanel>
+
+            <Grid Margin="0,0,0,24">
+
+                <PasswordBox x:Name="txtPassword"
+
+                             Style="{StaticResource LoginDarkPasswordBox}"
+
+                             PasswordChanged="TxtPassword_PasswordChanged"/>
+
+                <TextBox x:Name="txtPasswordPlain"
+
+                         Style="{StaticResource LoginDarkTextBox}"
+
+                         Visibility="Collapsed"
+
+                         TextChanged="TxtPasswordPlain_TextChanged"/>
+
+                <TextBlock x:Name="TxtPasswordHint"
+
+                           Text="Ingrese su contrase&#241;a"
+
+                           Foreground="{StaticResource LoginHintBrush}"
+
+                           Margin="18,0,42,0"
+
+                           VerticalAlignment="Center"
+
+                           IsHitTestVisible="False"/>
+
+                <Button x:Name="BtnTogglePassword"
+
+                        Style="{StaticResource LoginTogglePasswordButton}"
+
+                        Click="BtnTogglePassword_Click"/>
+
+            </Grid>
+
+
+
+            <Button Content="Ingresar"
+
+                    Style="{StaticResource LoginIngresarButton}"
+
+                    Margin="0,0,0,18"
+
+                    IsDefault="True"
+
+                    Click="BtnLogin_Click"/>
+
+
+
+            <TextBlock Text="&#169; Grunflex"
+
+                       FontSize="11"
+
+                       Foreground="#94A3B8"
+
+                       HorizontalAlignment="Center"/>
+
+
+
+        </StackPanel>
+
+    </ScrollViewer>
+
+</Window>
+
+

@@ -1,0 +1,85 @@
+﻿<Window x:Class="GrunflexPOS2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:GrunflexPOS2.Views"
+        Title="Grunflex POS"
+        Height="720"
+        Width="1200"
+        MinHeight="560"
+        MinWidth="900"
+        WindowState="Maximized"
+        WindowStartupLocation="CenterScreen"
+        KeyDown="MainWindow_KeyDown">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" MinWidth="160"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 🔥 MENÚ IZQUIERDO (FIJADO A COLUMNA 0) -->
+        <DockPanel Grid.Column="0"
+                   Background="#2D2D30"
+                   Panel.ZIndex="1"
+                   LastChildFill="True">
+
+            <!-- Footer: indicador de conectividad -->
+            <Border DockPanel.Dock="Bottom"
+                    Background="#1F1F22"
+                    Padding="10,10"
+                    Cursor="Hand"
+                    MouseLeftButtonUp="EstadoConexion_Click"
+                    ToolTip="Click para abrir el diagnóstico del sistema">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="EstadoConexionDot"
+                             Width="10"
+                             Height="10"
+                             Fill="#9CA3AF"
+                             VerticalAlignment="Center"/>
+                    <TextBlock x:Name="EstadoConexionTxt"
+                               Text="Conexión: ..."
+                               Foreground="#E5E7EB"
+                               FontSize="11"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel>
+                <Button Content="Ventas (F1)"
+                        Height="50"
+                        Margin="10"
+                        Click="BtnVentas_Click"/>
+
+                <Button Content="Productos (F2)"
+                        Height="50"
+                        Margin="10"
+                        Click="BtnProductos_Click"/>
+
+                <Button Content="Inventario (F4)"
+                        Height="50"
+                        Margin="10"
+                        Click="BtnInventario_Click"/>
+
+                <Button Content="Configuración (F10)"
+                        Height="50"
+                        Margin="10"
+                        Click="BtnConfiguracion_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Contenido: ocupa el viewport; cada vista maneja su scroll interno. -->
+        <Border Grid.Column="1"
+                Background="White"
+                Panel.ZIndex="0">
+
+            <ContentControl x:Name="MainContent"
+                            x:FieldModifier="public"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"/>
+        </Border>
+
+    </Grid>
+</Window>

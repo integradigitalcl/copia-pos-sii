@@ -1,0 +1,7 @@
+GRUNFLEX POS — TÉRMINOS DE USO (RESUMEN)
+
+Este software se proporciona "tal cual" para uso interno del negocio que lo instala.
+
+Al continuar con la instalación, usted acepta utilizar el producto bajo su propia responsabilidad, incluyendo la correcta configuración de la base de datos PostgreSQL, red y credenciales.
+
+Para soporte o condiciones comerciales definitivas, contacte a su proveedor Grunflex.

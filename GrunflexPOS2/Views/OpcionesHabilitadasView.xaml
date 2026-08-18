@@ -1,0 +1,124 @@
+<UserControl x:Class="GrunflexPOS2.Views.OpcionesHabilitadasView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <Border Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3" Margin="0,0,0,12">
+                <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+            </Border>
+            <TextBlock Text="CONFIGURACIÓN"
+                       FontSize="28"
+                       FontWeight="Bold"/>
+            <TextBlock Text="OPCIONES HABILITADAS"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryBrush}"
+                       Margin="0,18,0,12"/>
+
+            <Border Background="White" Padding="16" CornerRadius="8" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <CheckBox x:Name="ChkUsarInventario"
+                              Content="Utilizar inventarios para mis productos"
+                              FontSize="18"
+                              FontWeight="SemiBold"/>
+                    <TextBlock Margin="18,8,0,0" Foreground="#444" FontSize="14"
+                               TextWrapping="Wrap"
+                               Text="Si usas Inventario, tus productos tendrán cantidades limitadas en venta y podrás llevar un control de cuanto tienes, cuando y cuanto se vende."/>
+
+                    <StackPanel Orientation="Horizontal" Margin="18,16,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Método costo de inventario:"
+                                   Width="220"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbMetodoCosto"
+                                  Width="300"
+                                  SelectedIndex="0">
+                            <ComboBoxItem Content="Costo promedio ponderado"/>
+                            <ComboBoxItem Content="PEPS"/>
+                            <ComboBoxItem Content="UEPS"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <CheckBox x:Name="ChkOfrecerCredito"
+                              Margin="0,20,0,0"
+                              Content="Deseo ofrecer crédito a mis clientes"
+                              FontSize="18"/>
+
+                    <CheckBox x:Name="ChkProductoComun"
+                              Margin="0,10,0,0"
+                              Content="Habilitar venta de Producto Común"
+                              FontSize="18"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Center">
+                        <CheckBox x:Name="ChkCalcularMargen"
+                                  Content="Calcular automáticamente precio de venta con el margen de ganancia del"
+                                  FontSize="18"/>
+                        <TextBox x:Name="TxtMargen"
+                                 Width="70"
+                                 Margin="10,0,6,0"
+                                 VerticalContentAlignment="Center"/>
+                        <TextBlock Text="%"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Center">
+                        <CheckBox x:Name="ChkRedondeo"
+                                  Content="Habilitar redondeo de centavos a cantidad cerrada"
+                                  FontSize="18"/>
+                        <ComboBox x:Name="CmbRedondeo"
+                                  Width="260"
+                                  Margin="12,0,0,0">
+                            <ComboBoxItem Content="A décimas"/>
+                            <ComboBoxItem Content="A unidades"/>
+                            <ComboBoxItem Content="A 50"/>
+                            <ComboBoxItem Content="A 100"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <TextBlock Text="Avisos ocasionales"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Margin="0,22,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Mostrar aviso:"
+                                   VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtAviso"
+                                 Width="380"
+                                 Margin="8,0,8,0"
+                                 VerticalContentAlignment="Center"/>
+                        <TextBlock Text="cada"
+                                   VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtCadaVentas"
+                                 Width="55"
+                                 Margin="8,0,8,0"
+                                 VerticalContentAlignment="Center"/>
+                        <TextBlock Text="ventas cobradas."
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,20,0,0">
+                        <Button Content="Guardar"
+                                Width="120"
+                                Margin="0,0,8,0"
+                                Click="Guardar_Click"
+                                Style="{StaticResource MiniTopButton}"/>
+                        <Button Content="Restaurar"
+                                Width="120"
+                                Click="Restaurar_Click"
+                                Style="{StaticResource MiniTopButton}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

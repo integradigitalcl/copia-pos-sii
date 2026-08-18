@@ -1,15 +1,17 @@
-﻿<Window x:Class="GrunflexPOS2.Views.BuscarProductoWindow"
+<Window x:Class="GrunflexPOS2.Views.BuscarProductoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Búsqueda de Productos"
-        Height="600"
-        Width="1000"
+        Height="640"
+        Width="1040"
+        MinWidth="900"
+        MinHeight="520"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        Background="#F0F0F0">
+        Background="#F8FAFC"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
 
     <Grid Margin="20">
-
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -17,74 +19,85 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Título -->
-        <TextBlock Text="BÚSQUEDA DE PRODUCTOS"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Margin="0,0,0,20"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="BÚSQUEDA DE PRODUCTOS"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}"/>
+            <TextBlock Text="Escriba para filtrar o pulse F10 para buscar. Enter acepta, Esc cancela."
+                       FontSize="13"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       Margin="0,6,0,0"/>
+        </StackPanel>
 
-        <!-- Buscador -->
-        <Grid Grid.Row="1" Margin="0,0,0,15">
+        <Grid Grid.Row="1" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <TextBox x:Name="txtBuscar"
-                     Height="35"
+                     Style="{StaticResource ModernTextBox}"
                      VerticalContentAlignment="Center"
-                     Padding="10"/>
+                     TextChanged="TxtBuscar_TextChanged"
+                     KeyDown="TxtBuscar_KeyDown"/>
 
             <Button Grid.Column="1"
-                    Content="F10 - Buscar"
-                    Height="35"
+                    Content="F10 — Buscar"
+                    Style="{StaticResource PosToolbarAccentButton}"
+                    MinWidth="140"
+                    Height="42"
                     Margin="10,0,0,0"
                     Click="BtnBuscar_Click"/>
         </Grid>
 
-        <!-- DataGrid -->
-        <DataGrid x:Name="dgProductos"
-                  Grid.Row="2"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False">
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="{StaticResource PanelBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Effect="{StaticResource PosCardShadow}">
+            <DataGrid x:Name="dgProductos"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      RowHeaderWidth="0"
+                      ColumnHeaderStyle="{StaticResource VentasDataGridColumnHeaderStyle}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Descripción del producto"
+                                        Binding="{Binding Nombre}"
+                                        Width="*"/>
+                    <DataGridTextColumn Header="Precio de Venta"
+                                        Binding="{Binding Precio, StringFormat=C0}"
+                                        Width="150"/>
+                    <DataGridTextColumn Header="Departamento"
+                                        Binding="{Binding Departamento}"
+                                        Width="160"/>
+                    <DataGridTextColumn Header="Inventario"
+                                        Binding="{Binding Stock}"
+                                        Width="120"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
 
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Descripción del producto"
-                                    Binding="{Binding Nombre}"
-                                    Width="*"/>
-
-                <DataGridTextColumn Header="Precio de Venta"
-                                    Binding="{Binding Precio}"
-                                    Width="150"/>
-
-                <DataGridTextColumn Header="Departamento"
-                                    Binding="{Binding Departamento}"
-                                    Width="150"/>
-
-                <DataGridTextColumn Header="Inventario"
-                                    Binding="{Binding Stock}"
-                                    Width="120"/>
-            </DataGrid.Columns>
-
-        </DataGrid>
-
-        <!-- Botones -->
         <StackPanel Grid.Row="3"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
-                    Margin="0,20,0,0">
-
-            <Button Content="ENTER - Aceptar"
-                    Width="150"
-                    Height="40"
+                    Margin="0,18,0,0">
+            <Button Content="Enter — Aceptar"
+                    Style="{StaticResource PosToolbarAccentButton}"
+                    MinWidth="150"
+                    Height="42"
                     Margin="0,0,10,0"
                     Click="BtnSeleccionar_Click"/>
-
-            <Button Content="ESC - Cancelar"
-                    Width="150"
-                    Height="40"
+            <Button Content="Esc — Cancelar"
+                    Style="{StaticResource PosToolbarOutlineButton}"
+                    MinWidth="150"
+                    Height="42"
                     Click="BtnCancelar_Click"/>
         </StackPanel>
-
     </Grid>
 </Window>

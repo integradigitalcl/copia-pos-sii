@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PosEdge.Contracts\PosEdge.Contracts.csproj" />
+    <ProjectReference Include="..\PosEdge.Domain\PosEdge.Domain.csproj" />
+    <ProjectReference Include="..\PosEdge.Shared\PosEdge.Shared.csproj" />
+    <ProjectReference Include="..\PosEdge.Infrastructure\PosEdge.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="11.1.0" />
+    <PackageReference Include="Npgsql" Version="8.0.6" />
+  </ItemGroup>
+
+</Project>

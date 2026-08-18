@@ -1,0 +1,154 @@
+﻿<UserControl x:Class="GrunflexPOS2.Views.FormasPagoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="MiniTopButton" TargetType="Button" BasedOn="{StaticResource TopFlatButton}">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="12,0"/>
+        </Style>
+        <Style x:Key="SectionCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="{StaticResource PrimaryGradientBrush}" Height="40" CornerRadius="3">
+                    <TextBlock Text="CONFIGURACIÓN" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+                </Border>
+
+                <TextBlock Text="FORMAS DE PAGO" FontSize="34" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,10,0,14"/>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="💰" FontSize="38" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Efectivo" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkEfectivoNoMenor" Content="No permitir cobrar si el efectivo ingresado es menor que el total de la venta."/>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="💵" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Dólares Americanos" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkDolarHabilitado" Content="Deseo habilitar el cobro en Dólares Americanos"/>
+                        <TextBlock Text="Al habilitar podrás realizar cobro en dólares, el tipo de cambio te es preguntado cada vez que inicia el programa&#x0a;o lo puedes modificar en el recuadro"
+                                   TextWrapping="Wrap" Foreground="#404040" Margin="0,3,0,3"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Tipo de Cambio" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="TxtTipoCambio" Width="110"/>
+                            <Button Content="Modificar" Margin="8,0,0,0" Click="BtnGuardar_Click" Style="{StaticResource MiniTopButton}" Width="110"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="💳" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Tarjeta de crédito" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkTarjetaHabilitada" Content="Deseo habilitar cobro con Tarjeta de Crédito/Débito"/>
+                        <TextBlock Text="Al habilitarlo podrás registrar el pago de la venta con tarjeta y obtener reporte de ingresos que tuviste con esta forma de pago en el corte del día."
+                                   TextWrapping="Wrap" Foreground="#404040" Margin="0,3,0,3"/>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="ChkTarjetaComision" Content="Cobrar comisión por cobro con tarjeta el"/>
+                            <TextBox x:Name="TxtTarjetaComision" Width="70" Margin="8,0,0,0"/>
+                            <TextBlock Text="%" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🏦" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Transferencias Bancarias" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="ChkTransferenciaHabilitada" Content="Deseo habilitar cobro con Transferencias"/>
+                            <TextBox x:Name="TxtTransferenciaAlias" Width="160" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🧾" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Cheque" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkChequeHabilitado" Content="Deseo habilitar cobro con Cheque"/>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🎟" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Vales de despensa" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkValesHabilitado" Content="Deseo habilitar cobro con Vales de Despensa"/>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Border Style="{StaticResource SectionCard}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="💱" FontSize="34" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Pagos Mixtos" FontWeight="Bold" FontSize="28" Foreground="#003B8D"/>
+                        <CheckBox x:Name="ChkMixtoHabilitado" Content="Deseo habilitar el cobro con varias formas de pago (mixto)"/>
+                        <TextBlock Text="Al habilitar esta opción podrás cobrar una venta con varias formas de pago, por ejemplo cobrar una parte en&#x0a;Efectivo, otra en Dólares, otra con Tarjeta, etc."
+                                   TextWrapping="Wrap" Foreground="#404040" Margin="0,3,0,3"/>
+                    </StackPanel>
+                </Grid>
+                </Border>
+
+                <Button Content="💾 Guardar configuración" Width="260" HorizontalAlignment="Left" Margin="64,10,0,10" Click="BtnGuardar_Click" Style="{StaticResource MiniTopButton}"/>
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>
