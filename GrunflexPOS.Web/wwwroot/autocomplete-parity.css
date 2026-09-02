@@ -1,0 +1,14 @@
+.ventas-search-block{position:relative;z-index:12}
+.ventas-search-block .sales-suggestions{position:absolute;top:68px;left:0;right:0;display:grid;gap:2px;max-height:300px;overflow:auto;padding:5px;border:1px solid #bfdbfe;border-radius:10px;background:rgba(255,255,255,.98);box-shadow:0 12px 28px rgba(37,99,235,.16);z-index:20}
+.ventas-search-block .sales-suggestions button{width:100%;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:9px;min-height:44px;padding:5px 9px;border:0;border-radius:7px;background:transparent;color:#1e293b;text-align:left;cursor:pointer}
+.ventas-search-block .sales-suggestions button:hover,.ventas-search-block .sales-suggestions button:focus{background:#eff6ff;outline:0}
+.ventas-search-block .sales-suggestions button>span:first-child{display:grid;place-items:center;width:28px;height:28px;border-radius:7px}
+.ventas-search-block .suggestion-copy{display:grid;min-width:0;gap:2px}.ventas-search-block .suggestion-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.ventas-search-block .suggestion-copy small{color:#64748b;font-size:10px}.ventas-search-block .sales-suggestions button>strong{color:#2563eb;font-size:11px;white-space:nowrap}
+.ventas-search-box{position:relative;padding-right:28px}
+.ventas-search-box input{padding-right:4px}
+.search-dropdown-arrow{position:absolute;right:9px;top:50%;transform:translateY(-55%);color:#64748b;font-size:14px;pointer-events:none}
+.ventas-search-block .sales-suggestions{top:64px;max-height:310px;display:block;padding:0;border:1px solid #7f7f7f;border-radius:0;background:#fff;box-shadow:2px 3px 5px rgba(0,0,0,.2)}
+.ventas-search-block .sales-suggestions button{display:block;width:100%;min-height:28px;height:28px;padding:0 6px;border:0;border-radius:0;background:#fff;color:#1f2937;font-size:14px;font-weight:400;line-height:28px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ventas-search-block .sales-suggestions button:hover,.ventas-search-block .sales-suggestions button:focus{background:#e5f1ff;color:#111827}
+.ventas-search-block .sales-suggestions button.selected{background:#cfe5ff;color:#111827}
+.ventas-search-block .sales-suggestions button>span:first-child{display:block;width:auto;height:auto;border-radius:0}

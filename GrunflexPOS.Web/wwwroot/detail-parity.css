@@ -1,0 +1,10 @@
+.checkout-line{gap:12px;padding:10px 0}
+.checkout-line .line-info strong{display:block;color:#111827;font-size:14px;line-height:1.25}
+.checkout-line .line-info small{display:block;margin-top:3px;color:#8aa0bc;font-size:11px}
+.checkout-line .line-total{min-width:70px;color:#111827;font-size:14px}
+.checkout-panel .remove-line{color:#9db0c8;font-size:18px}
+.checkout-detail-scroll{flex:1}
+.detail-empty{position:relative;overflow:hidden;isolation:isolate}
+.checkout-detail-scroll .detail-empty{height:100%;box-sizing:border-box}
+.detail-empty>span{position:relative;z-index:1}
+.detail-watermark{position:absolute;z-index:0;width:min(270px,80%);opacity:.08;pointer-events:none}

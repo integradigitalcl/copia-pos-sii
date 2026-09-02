@@ -1,0 +1,73 @@
+#!/bin/bash
+# Launcher del bundle Grunflex POS Web.app (macOS 10.15+)
+set -euo pipefail
+
+CONTENTS="$(cd "$(dirname "$0")/.." && pwd)"
+RESOURCES="$CONTENTS/Resources"
+MARKER="${HOME}/Library/Application Support/GrunflexPOS/.app-configured"
+LOG="/tmp/grunflex-launcher.log"
+
+export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+{
+  echo "==== $(date) launcher start ===="
+  echo "RESOURCES=$RESOURCES"
+} >>"$LOG" 2>&1
+
+chmod +x "$RESOURCES"/*.sh 2>/dev/null || true
+chmod +x "$RESOURCES/web/GrunflexPOS.Web" "$RESOURCES/API/GrunflexPOS.API" 2>/dev/null || true
+chmod +x "$0" 2>/dev/null || true
+
+cd "$RESOURCES"
+# shellcheck source=common.sh
+source "$RESOURCES/common.sh"
+
+notify() {
+  local msg="$1"
+  echo "NOTIFY: $msg" >>"$LOG"
+  # AppleScript: un solo botón, texto plano
+  osascript <<EOF >>"$LOG" 2>&1 || true
+display dialog "$msg" with title "Grunflex POS Web" buttons {"OK"} default button 1
+EOF
+}
+
+if [[ ! -w "$RESOURCES/web/appsettings.json" ]]; then
+  notify "Esta copia esta en un DMG de solo lectura. Arrastre Grunflex POS Web a Aplicaciones y abralo desde ahi."
+  exit 1
+fi
+
+if [[ ! -f "$MARKER" ]]; then
+  choice="$(osascript <<'APPLESCRIPT' 2>>"$LOG" || true
+choose from list {"Caja principal (servidor)", "Caja adicional (cliente)"} with prompt "Grunflex POS Web — tipo de instalación:" default items {"Caja principal (servidor)"} OK button name "Continuar" cancel button name "Cancelar"
+APPLESCRIPT
+)"
+  echo "choice=$choice" >>"$LOG"
+  if [[ -z "$choice" || "$choice" == "false" ]]; then
+    exit 0
+  fi
+  ROLE="server"
+  [[ "$choice" == *"adicional"* ]] && ROLE="client"
+
+  mkdir -p "$(dirname "$MARKER")" "$(grunflex_local_data)/config" "$(grunflex_local_data)/data" 2>/dev/null || true
+
+  if ! bash "$RESOURCES/apply-install-profile.sh" "$ROLE" "$RESOURCES" >>"$LOG" 2>&1; then
+    notify "No se pudo completar la configuracion. Revise /tmp/grunflex-launcher.log"
+    exit 1
+  fi
+  touch "$MARKER"
+  echo "Perfil $ROLE aplicado." >>"$LOG"
+fi
+
+if ! bash "$RESOURCES/run-web-production.sh" >>"$LOG" 2>&1; then
+  notify "No se pudo iniciar el POS. Revise /tmp/grunflex-launcher.log y /tmp/grunflex-web.log"
+  exit 1
+fi
+
+if wait_http_ok "http://127.0.0.1:${WEB_PORT}/health" 8; then
+  open_pos_browser "http://127.0.0.1:${WEB_PORT}" >>"$LOG" 2>&1 || true
+else
+  notify "El servicio esta arrancando. Se intentara abrir Firefox ESR en http://127.0.0.1:${WEB_PORT}"
+  open_pos_browser "http://127.0.0.1:${WEB_PORT}" >>"$LOG" 2>&1 || true
+fi
+
+echo "==== launcher ok ====" >>"$LOG"

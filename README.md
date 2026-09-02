@@ -90,6 +90,9 @@ El color de acento cambia según licencia: **azul** (multicaja) / **verde** (mon
 
 ```
 GrunflexPOS2/                 # POS WPF (cliente)
+GrunflexPOS.Web/              # POS local para Chrome (Blazor Server + SQLite)
+GrunflexPOS.HardwareBridge/   # Bridge loopback para impresora, cajón y COM
+GrunflexPOS.Web.Tests/        # Tests de persistencia y ventas web
 GrunflexPOS.API/              # API ASP.NET Core (multicaja / licensing / pago)
 Grunflex.Licensing.Abstractions/
 Grunflex.LicenseIssuer/       # Emisión de licencias (interno)
@@ -134,6 +137,37 @@ Overrides locales: crear `%LocalAppData%\GrunflexPOS\config\appsettings.local.js
 
 ```powershell
 dotnet test GrunflexPOS.API.Tests
+```
+
+---
+
+## POS Web local para Chrome
+
+Esta copia incluye `GrunflexPOS.Web`, una aplicación Blazor Server para usar el POS desde Chrome sin reemplazar el cliente WPF. Escucha únicamente en loopback, guarda el catálogo y las ventas en SQLite y mantiene el flujo de login, ventas, cobro, productos, inventario, reportes, corte, configuración y widget de YouTube Music.
+
+```powershell
+# Desarrollo con hot reload y Chrome
+powershell -ExecutionPolicy Bypass -File ops/web/run-web-dev.ps1
+
+# Publicar y ejecutar como instalación local
+powershell -ExecutionPolicy Bypass -File ops/web/run-web-production.ps1
+
+# Tests de persistencia SQLite
+dotnet test GrunflexPOS.Web.Tests
+```
+
+Credenciales iniciales de demostración local: `admin/admin` (Administrador) o `cajero/cajero` (Cajero). En una instalación de producción deben reemplazarse por la autenticación central del comercio.
+
+La base web se crea en `%LocalAppData%\GrunflexPOS\grunflex-pos.db` y puede cambiarse con `Data:DatabasePath` en `GrunflexPOS.Web/appsettings.json`. La API de salud está disponible en `http://127.0.0.1:7373/health`.
+
+### Hardware desde Chrome
+
+Chrome no controla directamente puertos COM ni impresoras RAW. `GrunflexPOS.HardwareBridge` escucha en `127.0.0.1:7390` y expone operaciones autenticadas para impresora térmica, cajón y lector serial. Los lectores USB en modo teclado pueden seguir usándose directamente en el campo de búsqueda. El bridge se instala junto al web POS y no debe publicarse en una interfaz de red.
+
+El instalador de esta copia se genera con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ops/web/compile-web-installer.ps1
 ```
 
 ---

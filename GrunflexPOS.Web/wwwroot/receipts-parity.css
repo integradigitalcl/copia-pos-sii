@@ -1,0 +1,4 @@
+.success-banner{display:flex;align-items:center;gap:10px}
+.success-banner .receipt-link{margin-left:auto;border:1px solid #86efac;border-radius:7px;padding:5px 10px;background:#fff;color:#047857;font-size:11px;font-weight:700;cursor:pointer}
+.success-banner .receipt-link:hover{background:#ecfdf5}
+.receipts-card{margin-top:16px}.receipts-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:14px}.receipts-heading h2{margin:3px 0 2px;color:#111827;font-size:18px}.receipts-heading p{margin:0;color:#64748b;font-size:12px}.receipts-heading .outline-button{width:auto;padding:0 14px}

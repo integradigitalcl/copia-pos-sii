@@ -1,0 +1,4 @@
+/* The empty-cart product graphic should feel calm, not distracting. */
+.empty-cart-ring{
+    animation-duration:8s!important;
+}

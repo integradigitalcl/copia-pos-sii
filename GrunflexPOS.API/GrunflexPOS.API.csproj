@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>b4d2d24e-eaf4-4acf-a4de-575bb28d9525</UserSecretsId>
+    <OutputType Condition="'$(RuntimeIdentifier)' == 'win-x64'">WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>

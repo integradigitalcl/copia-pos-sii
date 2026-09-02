@@ -1,0 +1,25 @@
+@font-face{
+    font-family:"Bakemono Stereo";
+    src:url("assets/Bakemono-Stereo-Regular-trial.ttf") format("truetype");
+    font-style:normal;
+    font-weight:400;
+    font-display:swap;
+}
+
+html,body,button,input,textarea,select{
+    font-family:"Bakemono Stereo",Inter,"Segoe UI",Arial,sans-serif!important;
+}
+
+body{
+    letter-spacing:.01em;
+    line-height:1.2;
+}
+
+.nav-card-copy strong,.nav-card-copy em,.premium-nav strong,.premium-nav em,
+.header-button,.close-register,.payment-button,
+.category-chip,.product-name,.product-price,.product-stock,.ticket-summary,
+th,td{
+    letter-spacing:.01em;
+}
+
+h1,h2{letter-spacing:.02em}

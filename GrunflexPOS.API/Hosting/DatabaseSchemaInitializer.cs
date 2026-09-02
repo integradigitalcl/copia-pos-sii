@@ -1,5 +1,6 @@
 using Grunflex.Licensing.Security;
 using GrunflexPOS.API.Data;
+using GrunflexPOS.API.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -333,6 +334,7 @@ try
 
         var invLog = scopePos.ServiceProvider.GetRequiredService<ILogger<DatabaseSchemaInitializer>>();
         await CommerceInventorySchemaInitializer.EnsureAsync(posDb, invLog, ct);
+        await CommerceFirstRunBootstrap.EnsureAsync(services, ct);
     }
 }
 catch (Exception ex)
