@@ -39,19 +39,16 @@ public sealed class MulticajaClient(
                 "multicaja_api_url",
                 configuration["Multicaja:ApiBaseUrl"] ?? "http://127.0.0.1:7279/"));
 
-            var cajaIdText = await store.GetSettingAsync(
-                "multicaja_caja_id", configuration["Multicaja:CajaId"] ?? string.Empty, cancellationToken);
-            if (!Guid.TryParse(cajaIdText, out var cajaId))
-            {
-                var registration = await SendAsync<MulticajaCajaAutoRegistroResponse>(
-                    HttpMethod.Post, "api/multicaja/cajas/auto-registro",
-                    new { machineName = Environment.MachineName }, null, cancellationToken);
-                if (!registration.Success || registration.Value is null || !registration.Value.Ok)
-                    return MulticajaPreparation.Failed(registration.Error ?? registration.Value?.Error ?? "No se pudo registrar la caja.");
-                var created = registration.Value;
-                cajaId = created.CajaId;
-                await store.SetSettingAsync("multicaja_caja_id", cajaId.ToString(), cancellationToken);
-            }
+            // Reconfirma el registro en cada arranque: si la central se reinstaló, el id guardado ya no sirve.
+            var registeredCajaId = await EnsureCajaRegisteredAsync(false, cancellationToken);
+            if (registeredCajaId is null)
+                return MulticajaPreparation.Failed("No se pudo registrar la caja en la API central.");
+            var cajaId = registeredCajaId.Value;
+
+            // La caja principal es dueña del catálogo: lo publica antes de sincronizar de vuelta.
+            var role = await store.GetSettingAsync("terminal_role", "server", cancellationToken);
+            if (!string.Equals(role, "client", StringComparison.OrdinalIgnoreCase))
+                await PushCatalogAsync(cancellationToken);
 
             var synced = await SyncCatalogAsync(cancellationToken);
             if (!synced)
@@ -99,10 +96,53 @@ public sealed class MulticajaClient(
         }
     }
 
+    /// <summary>Publica el catálogo local en la API central para que las ventas encuentren los productos.</summary>
+    public async Task<bool> PushCatalogAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await IsEnabledAsync(cancellationToken))
+            return false;
+
+        try
+        {
+            var products = await store.GetProductsAsync(cancellationToken);
+            if (products.Count == 0)
+                return true;
+
+            var body = products.Select(p => new
+            {
+                id = p.CentralProductId ?? 0,
+                nombre = p.Name,
+                costo = p.Cost,
+                precio = p.Price,
+                stock = (int)Math.Max(0m, Math.Round(p.Stock, MidpointRounding.AwayFromZero)),
+                codigoBarras = p.Code,
+                precioMayoreo = p.WholesalePrice,
+                invMinimo = (int)Math.Max(0m, Math.Round(p.MinStock, MidpointRounding.AwayFromZero)),
+                invMaximo = (int)Math.Max(0m, Math.Round(p.MaxStock, MidpointRounding.AwayFromZero)),
+                tipoVenta = p.SaleType,
+                departamento = string.IsNullOrWhiteSpace(p.Department) ? p.Category : p.Department
+            }).ToArray();
+
+            var response = await SendAsync<MulticajaProductoUpsertResponse>(
+                HttpMethod.Post, "api/multicaja/productos/upsert", body, null, cancellationToken);
+            if (response.Success && response.Value is { Ok: true })
+                return true;
+
+            logger.LogWarning("No se pudo publicar el catálogo local en la API central: {Error}",
+                response.Error ?? response.Value?.Error);
+            return false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+        {
+            logger.LogDebug(ex, "No fue posible publicar el catálogo local en la API central");
+            return false;
+        }
+    }
+
     public async Task<MulticajaLoginResult> LoginAsync(
         string username, string password, CancellationToken cancellationToken = default)
     {
-        var cajaId = await GetCajaIdAsync(cancellationToken);
+        var cajaId = await EnsureCajaRegisteredAsync(false, cancellationToken);
         if (cajaId is null)
             return MulticajaLoginResult.Failed("La caja no está registrada en la API central.");
 
@@ -133,15 +173,34 @@ public sealed class MulticajaClient(
             HttpMethod.Get, $"api/multicaja/caja-sesiones/abierta?cajaId={cajaId}",
             null, null, cancellationToken);
         if (existing.Success && existing.Value is not null)
-            return new(true, existing.Value.Id, string.Empty);
+            return new(true, existing.Value.Id, string.Empty, cajaId);
 
         var session = await SendAsync<MulticajaCajaSesionDto>(
             HttpMethod.Post, "api/multicaja/caja-sesiones/abrir",
             new { cajaId, usuarioId = userId, username, montoInicial = openingAmount },
             null, cancellationToken);
-        return session.Success && session.Value is not null
-            ? new(true, session.Value.Id, string.Empty)
-            : new(false, Guid.Empty, session.Error ?? ExtractErrorMessage(session.RawJson) ?? "No se pudo abrir la sesión central.");
+        if (session.Success && session.Value is not null)
+            return new(true, session.Value.Id, string.Empty, cajaId);
+
+        var error = session.Error ?? ExtractErrorMessage(session.RawJson) ?? "No se pudo abrir la sesión central.";
+
+        // La central no conoce esta caja (por ejemplo, se reinstaló): reintenta con un registro nuevo.
+        if (IsMissingCajaError(error))
+        {
+            var reRegistered = await EnsureCajaRegisteredAsync(true, cancellationToken);
+            if (reRegistered is { } newCajaId && newCajaId != cajaId)
+            {
+                var retry = await SendAsync<MulticajaCajaSesionDto>(
+                    HttpMethod.Post, "api/multicaja/caja-sesiones/abrir",
+                    new { cajaId = newCajaId, usuarioId = userId, username, montoInicial = openingAmount },
+                    null, cancellationToken);
+                if (retry.Success && retry.Value is not null)
+                    return new(true, retry.Value.Id, string.Empty, newCajaId);
+                error = retry.Error ?? ExtractErrorMessage(retry.RawJson) ?? error;
+            }
+        }
+
+        return new(false, Guid.Empty, error);
     }
 
     public async Task<bool> UpdateCentralPasswordAsync(
@@ -166,11 +225,14 @@ public sealed class MulticajaClient(
 
     public async Task<MulticajaOperationResult> CommitSaleAsync(
         Guid cajaId, Guid sessionId, Guid userId, IReadOnlyCollection<CartItem> items,
-        string paymentMethod, bool personalConsumption, CancellationToken cancellationToken = default)
+        string paymentMethod, bool personalConsumption, decimal cashPortion = 0,
+        CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var terminal = await store.GetSettingAsync("terminal_code",
             configuration["Multicaja:TerminalCode"] ?? Environment.MachineName, cancellationToken);
+        var catalog = await store.GetProductsAsync(cancellationToken);
+        var byId = catalog.ToDictionary(p => p.Id);
         var body = new
         {
             requestId,
@@ -181,13 +243,39 @@ public sealed class MulticajaClient(
             cliente = "Público en general",
             metodoPago = personalConsumption ? "Consumo personal" : paymentMethod,
             esConsumoPersonal = personalConsumption,
-            items = items.Select(item => new
+            montoEfectivo = personalConsumption ? 0m : cashPortion,
+            items = items.Select(item =>
             {
-                codigoBarras = item.Product.Code,
-                producto = item.Product.Name,
-                cantidad = (int)item.Quantity,
-                precio = item.Quantity == 0 ? 0 : Math.Round(
-                    item.EffectiveUnitPrice * (1m - item.DiscountPercentage / 100m), 2)
+                var comps = PromotionCatalog.Parse(item.Product.PromotionComponentsJson);
+                return new
+                {
+                    productoId = item.Product.CentralProductId ?? 0,
+                    codigoBarras = item.Product.Code,
+                    producto = item.Product.Name,
+                    cantidad = (int)item.Quantity,
+                    precio = item.Quantity == 0 ? 0 : Math.Round(
+                        item.EffectiveUnitPrice * (1m - item.DiscountPercentage / 100m), 2),
+                    // Permiten que la central cree el producto si aún no lo tiene.
+                    costo = item.Product.Cost,
+                    stock = (int)Math.Max(0m, Math.Round(item.Product.Stock, MidpointRounding.AwayFromZero)),
+                    departamento = string.IsNullOrWhiteSpace(item.Product.Department)
+                        ? item.Product.Category
+                        : item.Product.Department,
+                    tipoVenta = item.Product.SaleType,
+                    componentes = comps.Count == 0
+                        ? null
+                        : comps.Select(c =>
+                        {
+                            byId.TryGetValue(c.ProductId, out var part);
+                            return new
+                            {
+                                productoId = part?.CentralProductId ?? 0,
+                                codigoBarras = part?.Code,
+                                producto = part?.Name ?? string.Empty,
+                                cantidadPorKit = (int)Math.Max(1m, Math.Round(c.Quantity, MidpointRounding.AwayFromZero))
+                            };
+                        }).ToArray()
+                };
             }).ToArray()
         };
         return await PostOrEnqueueAsync<MulticajaVentaCommitResponse>(
@@ -426,9 +514,61 @@ public sealed class MulticajaClient(
         _ => true
     };
 
-    private static bool ShouldEnqueue<T>(ApiResult<T> response) =>
-        response.StatusCode is null ||
-        response.Error?.Contains("no disponible", StringComparison.OrdinalIgnoreCase) == true;
+    private static bool ShouldEnqueue<T>(ApiResult<T> response)
+    {
+        // Un rechazo de negocio (la API respondió Ok=false) no se reintenta: encolarlo duplicaría la operación.
+        if (IsBusinessRejection(response.Value))
+            return false;
+
+        // 4xx es un error del cliente: reintentarlo no cambia el resultado.
+        if (response.StatusCode is >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError)
+            return false;
+
+        if (response.StatusCode is not null && response.StatusCode < HttpStatusCode.InternalServerError)
+            return response.Error?.Contains("no disponible", StringComparison.OrdinalIgnoreCase) == true;
+
+        // Sin respuesta o 5xx: la central no está disponible, se encola.
+        return true;
+    }
+
+    private static bool IsBusinessRejection<T>(T? value) => value switch
+    {
+        MulticajaVentaCommitResponse sale => !sale.Ok,
+        MulticajaInventoryResponse inventory => !inventory.Ok,
+        MulticajaCashMovementResponse cash => !cash.Ok,
+        MulticajaCloseResponse close => !close.Ok,
+        MulticajaVoidResponse cancel => !cancel.Ok,
+        MulticajaRefundResponse refund => !refund.Ok,
+        _ => false
+    };
+
+    private static bool IsMissingCajaError(string? error) =>
+        !string.IsNullOrWhiteSpace(error) &&
+        (error.Contains("Caja no existe", StringComparison.OrdinalIgnoreCase) ||
+         error.Contains("Caja no encontrada", StringComparison.OrdinalIgnoreCase) ||
+         error.Contains("no está registrada", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Registra la caja en la central y guarda el id devuelto. Con force ignora el id local.</summary>
+    private async Task<Guid?> EnsureCajaRegisteredAsync(bool force, CancellationToken cancellationToken)
+    {
+        var registration = await SendAsync<MulticajaCajaAutoRegistroResponse>(
+            HttpMethod.Post, "api/multicaja/cajas/auto-registro",
+            new { machineName = Environment.MachineName }, null, cancellationToken);
+
+        if (!registration.Success || registration.Value is null || !registration.Value.Ok)
+        {
+            logger.LogWarning("Auto-registro de caja falló: {Error}",
+                registration.Error ?? registration.Value?.Error);
+            return force ? null : await GetCajaIdAsync(cancellationToken);
+        }
+
+        var cajaId = registration.Value.CajaId;
+        if (cajaId == Guid.Empty)
+            return await GetCajaIdAsync(cancellationToken);
+
+        await store.SetSettingAsync("multicaja_caja_id", cajaId.ToString(), cancellationToken);
+        return cajaId;
+    }
 
     private static bool IsOfflineMessage(string message) =>
         message.Contains("no disponible", StringComparison.OrdinalIgnoreCase);
@@ -541,7 +681,14 @@ public sealed record MulticajaLoginResult(
         new(false, Guid.Empty, Guid.Empty, Guid.Empty, string.Empty, string.Empty, error);
 }
 
-public sealed record MulticajaSessionResult(bool Success, Guid SessionId, string Error);
+public sealed record MulticajaSessionResult(bool Success, Guid SessionId, string Error, Guid? CajaId = null);
+
+public sealed record MulticajaProductoUpsertResponse
+{
+    public bool Ok { get; init; }
+    public int Upserted { get; init; }
+    public string? Error { get; init; }
+}
 
 public sealed record MulticajaOperationResult(bool Success, string Message, bool Queued = false)
 {

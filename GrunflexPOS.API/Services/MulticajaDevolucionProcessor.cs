@@ -138,16 +138,21 @@ public sealed partial class MulticajaDevolucionProcessor
 
             if (!venta.EsConsumoPersonal && montoDevuelto > 0)
             {
-                sesion.TotalVentas = Math.Max(0, sesion.TotalVentas - montoDevuelto);
-                _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                var cashImpact = MulticajaCashImpact.ForRefund(
+                    venta.MetodoPago, venta.Total + montoDevuelto, montoDevuelto, montoEfectivo: null);
+                if (cashImpact > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    CajaSesionId = sesion.Id,
-                    Fecha = DateTime.UtcNow,
-                    Tipo = "DEVOLUCION",
-                    Monto = -montoDevuelto,
-                    Descripcion = $"Devolución Ticket #{req.NumeroTicket} ({req.Producto})"
-                });
+                    sesion.TotalVentas = Math.Max(0, sesion.TotalVentas - cashImpact);
+                    _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                    {
+                        Id = Guid.NewGuid(),
+                        CajaSesionId = sesion.Id,
+                        Fecha = DateTime.UtcNow,
+                        Tipo = "DEVOLUCION",
+                        Monto = -cashImpact,
+                        Descripcion = $"Devolución Ticket #{req.NumeroTicket} ({req.Producto})"
+                    });
+                }
             }
 
             await _db.SaveChangesAsync(ct);

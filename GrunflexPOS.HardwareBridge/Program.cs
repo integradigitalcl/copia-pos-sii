@@ -140,7 +140,8 @@ app.MapPost("/api/print/text", (PrintTextRequest? request, PrinterService printe
             }
         }
 
-        printers.PrintText(request.Printer, request.Text, logoBytes, request.LogoMonochrome ?? true);
+        var paperWidth = request.PaperWidthMm is 58 or 80 ? request.PaperWidthMm.Value : 80;
+        printers.PrintText(request.Printer, request.Text, logoBytes, request.LogoMonochrome ?? true, paperWidth);
         return Results.Ok(new { accepted = true, lines = request.Text.Split('\n').Length });
     }
     catch (Exception ex)

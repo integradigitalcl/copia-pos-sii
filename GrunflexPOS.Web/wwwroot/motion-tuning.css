@@ -1,4 +1,10 @@
-/* The empty-cart product graphic should feel calm, not distracting. */
-.empty-cart-ring{
-    animation-duration:8s!important;
+/* Empty-cart ring spin — slightly slower for a calmer empty state. */
+.empty-cart-ring {
+  animation: dash-rotate 4.2s linear infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-cart-ring {
+    animation: none !important;
+  }
 }

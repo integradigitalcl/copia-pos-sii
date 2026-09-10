@@ -120,16 +120,20 @@ public sealed partial class MulticajaAnulacionProcessor
 
             if (!venta.EsConsumoPersonal && venta.Total > 0)
             {
-                sesion.TotalVentas = Math.Max(0, sesion.TotalVentas - venta.Total);
-                _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                var cashImpact = MulticajaCashImpact.ForSale(venta.MetodoPago, venta.Total, montoEfectivo: null);
+                if (cashImpact > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    CajaSesionId = sesion.Id,
-                    Fecha = DateTime.UtcNow,
-                    Tipo = "ANULACION",
-                    Monto = -venta.Total,
-                    Descripcion = $"Anulación Ticket #{req.NumeroTicket}"
-                });
+                    sesion.TotalVentas = Math.Max(0, sesion.TotalVentas - cashImpact);
+                    _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                    {
+                        Id = Guid.NewGuid(),
+                        CajaSesionId = sesion.Id,
+                        Fecha = DateTime.UtcNow,
+                        Tipo = "ANULACION",
+                        Monto = -cashImpact,
+                        Descripcion = $"Anulación Ticket #{req.NumeroTicket}"
+                    });
+                }
             }
 
             await _db.SaveChangesAsync(ct);

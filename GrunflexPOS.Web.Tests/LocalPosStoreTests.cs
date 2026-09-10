@@ -20,10 +20,9 @@ public sealed class LocalPosStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task SeedCreatesCatalogAndSaleDecrementsStock()
+    public async Task SampleProductSaleDecrementsStock()
     {
-        await _store.EnsureCreatedAsync();
-        var product = (await _store.GetProductsAsync()).First();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
         var originalStock = product.Stock;
 
         var result = await _store.RecordSaleAsync([new CartItem(product, 2)], "admin", "Efectivo");
@@ -33,6 +32,13 @@ public sealed class LocalPosStoreTests : IDisposable
         var refreshed = (await _store.GetProductsAsync()).Single(x => x.Id == product.Id);
         Assert.Equal(originalStock - 2, refreshed.Stock);
         Assert.Equal(1, (await _store.GetDashboardAsync()).SalesToday);
+    }
+
+    [Fact]
+    public async Task FreshInstallHasEmptyCatalog()
+    {
+        await _store.EnsureCreatedAsync();
+        Assert.Empty(await _store.GetProductsAsync());
     }
 
     [Fact]
@@ -46,8 +52,7 @@ public sealed class LocalPosStoreTests : IDisposable
     [Fact]
     public async Task SalePersistsTicketDiscountAndChange()
     {
-        await _store.EnsureCreatedAsync();
-        var product = (await _store.GetProductsAsync()).First();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
         var result = await _store.RecordSaleAsync(
             [new CartItem(product, 2, 10)], "admin", "Efectivo",
             receivedAmount: product.Price * 2, printTicket: false);
@@ -63,14 +68,13 @@ public sealed class LocalPosStoreTests : IDisposable
     [Fact]
     public async Task PersonalConsumptionDeductsStockWithoutRevenue()
     {
-        await _store.EnsureCreatedAsync();
-        var product = (await _store.GetProductsAsync()).First();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
         var result = await _store.RecordSaleAsync(
             [new CartItem(product, 1)], "admin", "Consumo personal",
             personalConsumption: true, printTicket: false);
 
         Assert.True(result.Success);
-        Assert.Equal(0m, result.Total);
+        Assert.Equal(product.Price, result.Total);
         Assert.Equal(0, (await _store.GetDashboardAsync()).SalesToday);
         Assert.Equal(product.Stock - 1, (await _store.GetProductsAsync()).Single(x => x.Id == product.Id).Stock);
     }

@@ -8,11 +8,23 @@ namespace GrunflexPOS.API.Security;
 public sealed class MulticajaLicenseModuleFilter : IAsyncActionFilter
 {
     private readonly LicenseSlotService _slots;
+    private readonly IConfiguration _configuration;
 
-    public MulticajaLicenseModuleFilter(LicenseSlotService slots) => _slots = slots;
+    public MulticajaLicenseModuleFilter(LicenseSlotService slots, IConfiguration configuration)
+    {
+        _slots = slots;
+        _configuration = configuration;
+    }
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        // Sin exigencia de licencia el módulo multicaja queda liberado.
+        if (!_configuration.GetValue("Licensing:RequireLicense", false))
+        {
+            await next().ConfigureAwait(false);
+            return;
+        }
+
         var lic = await _slots.GetActiveLicenseAsync(null, context.HttpContext.RequestAborted)
             .ConfigureAwait(false);
 

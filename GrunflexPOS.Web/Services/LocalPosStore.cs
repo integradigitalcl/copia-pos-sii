@@ -13,40 +13,79 @@ public sealed class LocalPosStore(
     IConfiguration configuration,
     ILogger<LocalPosStore> logger)
 {
-    private static readonly (string Code, string Name, string Category, decimal Price, decimal Stock, string Unit, string Accent)[] SeedProducts =
-    [
-        ("7790895000011", "Pan blanco molde", "Panadería", 1890m, 24m, "un.", "#2563EB"),
-        ("7790895000028", "Leche entera 1L", "Lácteos", 1190m, 36m, "un.", "#7C3AED"),
-        ("7790895000035", "Café instantáneo", "Despensa", 4590m, 12m, "un.", "#0891B2"),
-        ("7790895000042", "Arroz grano largo 1kg", "Despensa", 1690m, 42m, "un.", "#EA580C"),
-        ("7790895000059", "Bebida cola 1.5L", "Bebidas", 1990m, 18m, "un.", "#DB2777"),
-        ("7790895000066", "Agua mineral 1.5L", "Bebidas", 990m, 31m, "un.", "#16A34A"),
-        ("7790895000073", "Huevos bandeja 12", "Lácteos", 3990m, 9m, "un.", "#CA8A04"),
-        ("7790895000080", "Detergente líquido", "Limpieza", 5290m, 7m, "un.", "#059669"),
-        ("7790895000097", "Galletas chocolate", "Despensa", 1490m, 20m, "un.", "#F97316"),
-        ("7790895000103", "Jugo natural 1L", "Bebidas", 2290m, 15m, "un.", "#E11D48"),
-        ("7790895000110", "Queso laminado 250g", "Lácteos", 3490m, 11m, "un.", "#0EA5E9"),
-        ("7790895000127", "Papel higiénico 4 un.", "Limpieza", 2990m, 16m, "un.", "#6366F1")
-    ];
-
     public async Task EnsureCreatedAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         await db.Database.EnsureCreatedAsync(cancellationToken);
         await EnsureSalesColumnsAsync(db, cancellationToken);
-        if (await db.Products.AnyAsync(cancellationToken))
-            return;
-
-        db.Products.AddRange(SeedProducts.Select(x => new LocalProduct
-        {
-            Code = x.Code, Name = x.Name, Category = x.Category, Price = x.Price,
-            Cost = x.Price, WholesalePrice = x.Price, Stock = x.Stock, Unit = x.Unit, Accent = x.Accent
-        }));
-        await db.SaveChangesAsync(cancellationToken);
+        // No se siembran productos ni stock. PC nueva → catálogo vacío (inventario 0).
+        // Instalación encima de una versión previa → se conserva grunflex-pos.db existente.
     }
 
     private async Task EnsureSalesColumnsAsync(LocalPosDbContext db, CancellationToken cancellationToken)
     {
+        // EnsureCreated no crea tablas si el archivo ya existía sin esquema (instalación interrumpida).
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "Products" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_Products" PRIMARY KEY AUTOINCREMENT,
+                "Code" TEXT NOT NULL DEFAULT '',
+                "Name" TEXT NOT NULL DEFAULT '',
+                "Category" TEXT NOT NULL DEFAULT '',
+                "Price" TEXT NOT NULL DEFAULT 0,
+                "Cost" TEXT NOT NULL DEFAULT 0,
+                "WholesalePrice" TEXT NOT NULL DEFAULT 0,
+                "Stock" TEXT NOT NULL DEFAULT 0,
+                "MinStock" TEXT NOT NULL DEFAULT 0,
+                "MaxStock" TEXT NOT NULL DEFAULT 0,
+                "Unit" TEXT NOT NULL DEFAULT 'un.',
+                "SaleType" TEXT NOT NULL DEFAULT 'Unidad',
+                "Department" TEXT NOT NULL DEFAULT 'General',
+                "Accent" TEXT NOT NULL DEFAULT '#2563EB',
+                "CentralProductId" INTEGER NULL,
+                "Active" INTEGER NOT NULL DEFAULT 1
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Products_Code" ON "Products" ("Code");
+            CREATE TABLE IF NOT EXISTS "Sales" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_Sales" PRIMARY KEY AUTOINCREMENT,
+                "TicketNumber" INTEGER NOT NULL DEFAULT 0,
+                "CreatedAtUtc" TEXT NOT NULL,
+                "UserName" TEXT NOT NULL DEFAULT '',
+                "PaymentMethod" TEXT NOT NULL DEFAULT '',
+                "Customer" TEXT NOT NULL DEFAULT 'Público en general',
+                "Subtotal" TEXT NOT NULL DEFAULT 0,
+                "Discount" TEXT NOT NULL DEFAULT 0,
+                "Total" TEXT NOT NULL DEFAULT 0,
+                "ReceivedAmount" TEXT NOT NULL DEFAULT 0,
+                "ChangeAmount" TEXT NOT NULL DEFAULT 0,
+                "PersonalConsumption" INTEGER NOT NULL DEFAULT 0,
+                "Cancelled" INTEGER NOT NULL DEFAULT 0,
+                "CancelledAtUtc" TEXT NULL,
+                "EditedAtUtc" TEXT NULL,
+                "EditedByUserName" TEXT NULL,
+                "EditCount" INTEGER NOT NULL DEFAULT 0,
+                "PrintTicket" INTEGER NOT NULL DEFAULT 1,
+                "CashSessionId" INTEGER NULL,
+                "CashSessionAmount" TEXT NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS "SaleLines" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_SaleLines" PRIMARY KEY AUTOINCREMENT,
+                "SaleId" INTEGER NOT NULL,
+                "ProductId" INTEGER NOT NULL,
+                "ProductName" TEXT NOT NULL DEFAULT '',
+                "Code" TEXT NOT NULL DEFAULT '',
+                "ListUnitPrice" TEXT NOT NULL DEFAULT 0,
+                "UnitPrice" TEXT NOT NULL DEFAULT 0,
+                "DiscountPercentage" TEXT NOT NULL DEFAULT 0,
+                "Quantity" TEXT NOT NULL DEFAULT 0,
+                "Total" TEXT NOT NULL DEFAULT 0,
+                "UnitCost" TEXT NOT NULL DEFAULT 0,
+                "Department" TEXT NOT NULL DEFAULT '',
+                CONSTRAINT "FK_SaleLines_Sales_SaleId"
+                    FOREIGN KEY ("SaleId") REFERENCES "Sales" ("Id") ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS "IX_SaleLines_SaleId" ON "SaleLines" ("SaleId");
+            """, cancellationToken);
+
         var columns = new[]
         {
             ("Sales", "TicketNumber", "INTEGER NOT NULL DEFAULT 0"),
@@ -72,11 +111,22 @@ public sealed class LocalPosStore(
             ("SaleLines", "Code", "TEXT NOT NULL DEFAULT ''"),
             ("SaleLines", "ListUnitPrice", "TEXT NOT NULL DEFAULT 0"),
             ("SaleLines", "DiscountPercentage", "TEXT NOT NULL DEFAULT 0"),
-            ("Users", "MustChangePassword", "INTEGER NOT NULL DEFAULT 0")
+            ("SaleLines", "UnitCost", "TEXT NOT NULL DEFAULT 0"),
+            ("SaleLines", "Department", "TEXT NOT NULL DEFAULT ''"),
+            ("Users", "MustChangePassword", "INTEGER NOT NULL DEFAULT 0"),
+            ("Products", "IsFavorite", "INTEGER NOT NULL DEFAULT 0"),
+            ("Products", "PromotionComponentsJson", "TEXT NOT NULL DEFAULT ''")
         };
 
         foreach (var (table, name, definition) in columns)
         {
+            // pragma_table_info devuelve 0 filas si la tabla no existe; sin esta guarda el ALTER fallaba.
+            var tableExists = await db.Database.SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS Value FROM sqlite_master WHERE type = 'table' AND name = {0}", table)
+                .SingleAsync(cancellationToken);
+            if (tableExists == 0)
+                continue;
+
             var exists = await db.Database.SqlQueryRaw<int>(
                 "SELECT COUNT(*) AS Value FROM pragma_table_info('" + table + "') WHERE name = {0}", name)
                 .SingleAsync(cancellationToken);
@@ -124,6 +174,7 @@ public sealed class LocalPosStore(
                 "Role" TEXT NOT NULL DEFAULT 'Cajero',
                 "Permissions" TEXT NOT NULL DEFAULT '',
                 "Active" INTEGER NOT NULL DEFAULT 1,
+                "MustChangePassword" INTEGER NOT NULL DEFAULT 0,
                 "CreatedAtUtc" TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_Users_UserName" ON "Users" ("UserName");
@@ -199,23 +250,289 @@ public sealed class LocalPosStore(
             await EnforceProductionPasswordPolicyAsync(db, cancellationToken);
         }
 
-        var zeroTickets = await db.Sales.Where(x => x.TicketNumber == 0).OrderBy(x => x.Id).ToListAsync(cancellationToken);
-        if (zeroTickets.Count > 0)
+        await RepairSaleTicketNumbersAsync(db, cancellationToken);
+        await SyncFolioSettingAsync(db, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reasigna folios en 0 o duplicados antes de crear el índice único.
+    /// Una reinstalación sobre grunflex-pos.db viejo deja varias ventas con TicketNumber=0
+    /// (columna agregada con DEFAULT 0) y CREATE UNIQUE INDEX abortaba el arranque.
+    /// </summary>
+    private static async Task RepairSaleTicketNumbersAsync(LocalPosDbContext db, CancellationToken cancellationToken)
+    {
+        var tableExists = await db.Database.SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS Value FROM sqlite_master WHERE type = 'table' AND name = {0}", "Sales")
+            .SingleAsync(cancellationToken);
+        if (tableExists == 0)
+            return;
+
+        var columnExists = await db.Database.SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS Value FROM pragma_table_info('Sales') WHERE name = {0}", "TicketNumber")
+            .SingleAsync(cancellationToken);
+        if (columnExists == 0)
+            return;
+
+        await db.Database.ExecuteSqlRawAsync("DROP INDEX IF EXISTS \"IX_Sales_TicketNumber\"", cancellationToken);
+
+        var rows = await db.Sales.AsNoTracking()
+            .OrderBy(x => x.Id)
+            .Select(x => new { x.Id, x.TicketNumber })
+            .ToListAsync(cancellationToken);
+        var used = new HashSet<long>();
+        var next = rows.Where(x => x.TicketNumber > 0).Select(x => x.TicketNumber).DefaultIfEmpty(0).Max();
+
+        foreach (var row in rows)
         {
-            var next = await db.Sales.Select(x => (long?)x.TicketNumber).MaxAsync(cancellationToken) ?? 0;
-            foreach (var sale in zeroTickets)
-                sale.TicketNumber = ++next;
+            var ticket = row.TicketNumber;
+            if (ticket <= 0 || !used.Add(ticket))
+            {
+                do { next++; } while (!used.Add(next));
+                ticket = next;
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"Sales\" SET \"TicketNumber\" = {ticket} WHERE \"Id\" = {row.Id}",
+                    cancellationToken);
+            }
+        }
+
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Sales_TicketNumber" ON "Sales" ("TicketNumber");
+            """, cancellationToken);
+    }
+
+    private static async Task SyncFolioSettingAsync(LocalPosDbContext db, CancellationToken cancellationToken)
+    {
+        var tableExists = await db.Database.SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS Value FROM sqlite_master WHERE type = 'table' AND name = {0}", "Sales")
+            .SingleAsync(cancellationToken);
+        if (tableExists == 0)
+            return;
+
+        var maxTicket = await db.Sales.Select(x => (long?)x.TicketNumber).MaxAsync(cancellationToken) ?? 0;
+        var nextFolio = (maxTicket + 1).ToString(CultureInfo.InvariantCulture);
+        var setting = await db.Settings.SingleOrDefaultAsync(x => x.Key == "folio_actual", cancellationToken);
+        if (setting is null)
+        {
+            db.Settings.Add(new LocalSetting { Key = "folio_actual", Value = nextFolio });
+            await db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        if (!long.TryParse(setting.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var configured)
+            || configured <= maxTicket)
+        {
+            setting.Value = nextFolio;
+            setting.UpdatedAtUtc = DateTime.UtcNow;
             await db.SaveChangesAsync(cancellationToken);
         }
     }
 
+    private static async Task<long> AllocateTicketNumberAsync(
+        LocalPosDbContext db, long? preferredTicket, CancellationToken cancellationToken)
+    {
+        var maxTicket = await db.Sales.Select(x => (long?)x.TicketNumber).MaxAsync(cancellationToken) ?? 0;
+        var nextTicket = maxTicket + 1;
+        var configuredFolio = await db.Settings.AsNoTracking()
+            .Where(x => x.Key == "folio_actual")
+            .Select(x => x.Value)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (long.TryParse(configuredFolio, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requestedFolio)
+            && requestedFolio > nextTicket)
+            nextTicket = requestedFolio;
+
+        if (preferredTicket is > 0)
+        {
+            var preferred = preferredTicket.Value;
+            var exists = await db.Sales.AsNoTracking()
+                .AnyAsync(x => x.TicketNumber == preferred, cancellationToken);
+            if (!exists)
+                return preferred;
+        }
+
+        return nextTicket;
+    }
+
+    private static bool IsSqliteUniqueConstraint(Exception ex) =>
+        ex.InnerException is Microsoft.Data.Sqlite.SqliteException sqlite &&
+        sqlite.SqliteExtendedErrorCode == 2067 /* SQLITE_CONSTRAINT_UNIQUE */;
+
     public async Task<IReadOnlyList<PosProduct>> GetProductsAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        return await db.Products.AsNoTracking().Where(x => x.Active).OrderBy(x => x.Name)
-            .Select(x => new PosProduct(x.Id, x.Code, x.Name, x.Category, x.Price, x.Stock, x.Unit, x.Accent, x.CentralProductId,
-                x.Cost, x.WholesalePrice, x.MinStock, x.MaxStock, x.SaleType, x.Department))
-            .ToListAsync(cancellationToken);
+        var rows = await db.Products.AsNoTracking().Where(x => x.Active).OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        var byId = rows.ToDictionary(x => x.Id);
+        return rows.Select(x =>
+        {
+            var components = PromotionCatalog.Parse(x.PromotionComponentsJson);
+            var stock = components.Count == 0
+                ? x.Stock
+                : PromotionCatalog.AvailableKits(components, id => byId.TryGetValue(id, out var p) ? p.Stock : 0m);
+            return new PosProduct(x.Id, x.Code, x.Name, x.Category, x.Price, stock, x.Unit, x.Accent, x.CentralProductId,
+                x.Cost, x.WholesalePrice, x.MinStock, x.MaxStock, x.SaleType, x.Department, x.IsFavorite,
+                x.PromotionComponentsJson ?? string.Empty);
+        }).ToList();
+    }
+
+    public async Task<ProductWriteResult> CreatePromotionAsync(
+        string code, string name, decimal price, decimal wholesalePrice,
+        IReadOnlyList<PromotionComponentInput> components, string userName,
+        CancellationToken cancellationToken = default)
+    {
+        code = code.Trim();
+        name = name.Trim();
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+            return ProductWriteResult.Failed("El código y el nombre de la promoción son obligatorios.");
+        if (price < 0 || wholesalePrice < 0)
+            return ProductWriteResult.Failed("El precio de la promoción no puede ser negativo.");
+        if (components is null || components.Count == 0)
+            return ProductWriteResult.Failed("Agrega al menos un producto a la promoción.");
+
+        var normalized = new List<PromotionComponentInput>();
+        foreach (var component in components)
+        {
+            if (component.ProductId <= 0 || component.Quantity <= 0)
+                return ProductWriteResult.Failed("Cada componente debe tener producto y cantidad mayores a cero.");
+            var existing = normalized.FirstOrDefault(x => x.ProductId == component.ProductId);
+            if (existing is null)
+                normalized.Add(new PromotionComponentInput(component.ProductId, component.Quantity));
+            else
+            {
+                normalized.Remove(existing);
+                normalized.Add(existing with { Quantity = existing.Quantity + component.Quantity });
+            }
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        if (await db.Products.AnyAsync(x => x.Active && x.Code.ToLower() == code.ToLower(), cancellationToken))
+            return ProductWriteResult.Failed($"Ya existe un producto con el código {code}.");
+
+        var ids = normalized.Select(x => x.ProductId).ToArray();
+        var parts = await db.Products.Where(x => ids.Contains(x.Id) && x.Active).ToListAsync(cancellationToken);
+        if (parts.Count != ids.Length)
+            return ProductWriteResult.Failed("Uno o más productos de la promoción no están disponibles.");
+        if (parts.Any(x => PromotionCatalog.Parse(x.PromotionComponentsJson).Count > 0))
+            return ProductWriteResult.Failed("No se puede incluir otra promoción dentro de una promoción.");
+
+        var cost = normalized.Sum(c =>
+        {
+            var part = parts.Single(p => p.Id == c.ProductId);
+            return part.Cost * c.Quantity;
+        });
+        var stock = PromotionCatalog.AvailableKits(normalized, id => parts.Single(p => p.Id == id).Stock);
+        var json = PromotionCatalog.Serialize(normalized);
+
+        var inactivePromo = await db.Products.FirstOrDefaultAsync(
+            x => !x.Active && x.Code.ToLower() == code.ToLower(), cancellationToken);
+        if (inactivePromo is not null)
+        {
+            inactivePromo.Active = true;
+            inactivePromo.Name = name;
+            inactivePromo.Category = "promos";
+            inactivePromo.Cost = cost;
+            inactivePromo.Price = price;
+            inactivePromo.WholesalePrice = wholesalePrice;
+            inactivePromo.Stock = stock;
+            inactivePromo.MinStock = 0;
+            inactivePromo.MaxStock = 0;
+            inactivePromo.Unit = "un.";
+            inactivePromo.SaleType = "Promoción";
+            inactivePromo.Department = "promos";
+            inactivePromo.PromotionComponentsJson = json;
+            inactivePromo.IsFavorite = false;
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Promoción {Code} reactivada por {UserName} con {Count} componentes", code, userName, normalized.Count);
+            return ProductWriteResult.Successful(inactivePromo.Id, "Promoción guardada correctamente.");
+        }
+
+        var product = new LocalProduct
+        {
+            Code = code,
+            Name = name,
+            Category = "promos",
+            Cost = cost,
+            Price = price,
+            WholesalePrice = wholesalePrice,
+            Stock = stock,
+            MinStock = 0,
+            MaxStock = 0,
+            Unit = "un.",
+            SaleType = "Promoción",
+            Department = "promos",
+            PromotionComponentsJson = json,
+            Active = true
+        };
+        db.Products.Add(product);
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Promoción {Code} creada por {UserName} con {Count} componentes", code, userName, normalized.Count);
+        return ProductWriteResult.Successful(product.Id, "Promoción guardada correctamente.");
+    }
+
+    public async Task<ProductWriteResult> UpdatePromotionAsync(
+        int productId, string name, decimal price, decimal wholesalePrice,
+        IReadOnlyList<PromotionComponentInput> components, string userName,
+        CancellationToken cancellationToken = default)
+    {
+        name = name.Trim();
+        if (productId <= 0)
+            return ProductWriteResult.Failed("Selecciona una promoción para modificar.");
+        if (string.IsNullOrWhiteSpace(name))
+            return ProductWriteResult.Failed("El nombre de la promoción es obligatorio.");
+        if (price < 0 || wholesalePrice < 0)
+            return ProductWriteResult.Failed("El precio de la promoción no puede ser negativo.");
+        if (components is null || components.Count == 0)
+            return ProductWriteResult.Failed("Agrega al menos un producto a la promoción.");
+
+        var normalized = new List<PromotionComponentInput>();
+        foreach (var component in components)
+        {
+            if (component.ProductId <= 0 || component.Quantity <= 0)
+                return ProductWriteResult.Failed("Cada componente debe tener producto y cantidad mayores a cero.");
+            var existing = normalized.FirstOrDefault(x => x.ProductId == component.ProductId);
+            if (existing is null)
+                normalized.Add(new PromotionComponentInput(component.ProductId, component.Quantity));
+            else
+            {
+                normalized.Remove(existing);
+                normalized.Add(existing with { Quantity = existing.Quantity + component.Quantity });
+            }
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var product = await db.Products.SingleOrDefaultAsync(x => x.Id == productId && x.Active, cancellationToken);
+        if (product is null)
+            return ProductWriteResult.Failed("La promoción no está disponible.");
+        var isPromo = PromotionCatalog.Parse(product.PromotionComponentsJson).Count > 0
+            || product.SaleType.Equals("Promoción", StringComparison.OrdinalIgnoreCase);
+        if (!isPromo)
+            return ProductWriteResult.Failed("El producto seleccionado no es una promoción.");
+
+        var ids = normalized.Select(x => x.ProductId).ToArray();
+        var parts = await db.Products.Where(x => ids.Contains(x.Id) && x.Active).ToListAsync(cancellationToken);
+        if (parts.Count != ids.Length)
+            return ProductWriteResult.Failed("Uno o más productos de la promoción no están disponibles.");
+        if (parts.Any(x => x.Id != productId && PromotionCatalog.Parse(x.PromotionComponentsJson).Count > 0))
+            return ProductWriteResult.Failed("No se puede incluir otra promoción dentro de una promoción.");
+
+        var cost = normalized.Sum(c =>
+        {
+            var part = parts.Single(p => p.Id == c.ProductId);
+            return part.Cost * c.Quantity;
+        });
+        var stock = PromotionCatalog.AvailableKits(normalized, id => parts.Single(p => p.Id == id).Stock);
+        var json = PromotionCatalog.Serialize(normalized);
+
+        product.Name = name;
+        product.Category = "promos";
+        product.Cost = cost;
+        product.Price = price;
+        product.WholesalePrice = wholesalePrice;
+        product.Stock = stock;
+        product.SaleType = "Promoción";
+        product.Department = "promos";
+        product.PromotionComponentsJson = json;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Promoción {Code} actualizada por {UserName} con {Count} componentes", product.Code, userName, normalized.Count);
+        return ProductWriteResult.Successful(product.Id, "Promoción actualizada correctamente.");
     }
 
     public async Task<ProductWriteResult> CreateProductAsync(
@@ -232,8 +549,44 @@ public sealed class LocalPosStore(
             return ProductWriteResult.Failed("Los valores del producto no pueden ser negativos.");
 
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        if (await db.Products.AnyAsync(x => x.Code.ToLower() == code.ToLower(), cancellationToken))
+        var existing = await db.Products.FirstOrDefaultAsync(
+            x => x.Code.ToLower() == code.ToLower(), cancellationToken);
+        if (existing is not null && existing.Active)
             return ProductWriteResult.Failed($"Ya existe un producto con el código {code}.");
+
+        if (existing is not null && !existing.Active)
+        {
+            // Reutiliza la fila dada de baja (libera el código sin que SyncCentral la recree).
+            existing.Active = true;
+            existing.Name = name;
+            existing.Category = string.IsNullOrWhiteSpace(category) ? "General" : category.Trim();
+            existing.Cost = cost;
+            existing.Price = price;
+            existing.WholesalePrice = wholesalePrice;
+            existing.Stock = stock;
+            existing.MinStock = minStock;
+            existing.MaxStock = maxStock;
+            existing.Unit = string.IsNullOrWhiteSpace(unit) ? "un." : unit.Trim();
+            existing.SaleType = string.IsNullOrWhiteSpace(saleType) ? "Unidad" : saleType.Trim();
+            existing.Department = string.IsNullOrWhiteSpace(department) ? "General" : department.Trim();
+            existing.IsFavorite = false;
+            existing.PromotionComponentsJson = string.Empty;
+            if (stock != 0)
+                db.InventoryMovements.Add(new LocalInventoryMovement
+                {
+                    ProductId = existing.Id,
+                    ProductCode = code,
+                    ProductName = name,
+                    Quantity = stock,
+                    StockBefore = 0,
+                    StockAfter = stock,
+                    Type = "ALTA_PRODUCTO",
+                    Reference = "Reactivación de producto",
+                    UserName = userName
+                });
+            await db.SaveChangesAsync(cancellationToken);
+            return ProductWriteResult.Successful(existing.Id, "Producto guardado correctamente.");
+        }
 
         var product = new LocalProduct
         {
@@ -325,9 +678,22 @@ public sealed class LocalPosStore(
         var product = await db.Products.SingleOrDefaultAsync(x => x.Id == productId, cancellationToken);
         if (product is null || !product.Active)
             return ProductWriteResult.Failed("Selecciona un producto activo.");
+        // Baja lógica: SyncCentral no debe recrear ni reactivar el producto eliminado.
         product.Active = false;
+        product.IsFavorite = false;
         await db.SaveChangesAsync(cancellationToken);
-        return ProductWriteResult.Successful(product.Id, "Producto eliminado del catálogo.");
+        return ProductWriteResult.Successful(productId, "Producto eliminado del catálogo.");
+    }
+
+    public async Task<ProductWriteResult> ToggleFavoriteAsync(int productId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var product = await db.Products.SingleOrDefaultAsync(x => x.Id == productId, cancellationToken);
+        if (product is null || !product.Active)
+            return ProductWriteResult.Failed("Producto no encontrado.");
+        product.IsFavorite = !product.IsFavorite;
+        await db.SaveChangesAsync(cancellationToken);
+        return ProductWriteResult.Successful(product.Id, product.IsFavorite ? "Producto marcado como favorito." : "Favorito eliminado.");
     }
 
     public async Task SyncCentralProductsAsync(
@@ -352,21 +718,50 @@ public sealed class LocalPosStore(
                 continue;
             if (!byCode.TryGetValue(central.CodigoBarras, out var product))
             {
-                product = new LocalProduct { Code = central.CodigoBarras };
+                product = new LocalProduct
+                {
+                    Code = central.CodigoBarras,
+                    Active = true,
+                    Name = central.Nombre,
+                    Cost = central.Costo,
+                    Price = central.Precio,
+                    WholesalePrice = central.PrecioMayoreo,
+                    Stock = central.Stock,
+                    MinStock = central.InvMinimo,
+                    MaxStock = central.InvMaximo,
+                    Unit = string.IsNullOrWhiteSpace(central.TipoVenta) ? "un." : central.TipoVenta,
+                    Category = string.IsNullOrWhiteSpace(central.Departamento) ? "General" : central.Departamento,
+                    Department = string.IsNullOrWhiteSpace(central.Departamento) ? "General" : central.Departamento,
+                    CentralProductId = central.Id
+                };
                 db.Products.Add(product);
+                byCode[central.CodigoBarras] = product;
+                continue;
             }
+
+            // Productos dados de baja localmente no se reactivan ni se recrean por sync.
+            if (!product.Active)
+                continue;
+
             product.CentralProductId = central.Id;
-            product.Name = central.Nombre;
-            product.Cost = central.Costo;
-            product.Price = central.Precio;
-            product.WholesalePrice = central.PrecioMayoreo;
-            product.Stock = central.Stock;
-            product.MinStock = central.InvMinimo;
-            product.MaxStock = central.InvMaximo;
-            product.Unit = string.IsNullOrWhiteSpace(central.TipoVenta) ? "un." : central.TipoVenta;
-            product.Category = string.IsNullOrWhiteSpace(central.Departamento) ? "General" : central.Departamento;
-            product.Department = product.Category;
-            product.Active = true;
+            // Solo alinear stock entre cajas. Nombre/precios/departamento se editan en el POS
+            // y se publican con upsert; no revertir esas ediciones en cada sync.
+            // Promociones: el stock visible es kits según componentes; no pisar con el valor central.
+            if (PromotionCatalog.Parse(product.PromotionComponentsJson).Count == 0)
+                product.Stock = central.Stock;
+        }
+
+        // Recalcular kits de promoción tras alinear componentes.
+        var byId = allProducts.ToDictionary(x => x.Id);
+        foreach (var product in allProducts)
+        {
+            if (!product.Active)
+                continue;
+            var components = PromotionCatalog.Parse(product.PromotionComponentsJson);
+            if (components.Count == 0)
+                continue;
+            product.Stock = PromotionCatalog.AvailableKits(
+                components, id => byId.TryGetValue(id, out var p) ? p.Stock : 0m);
         }
         await SaveChangesWithRetryAsync(db, cancellationToken);
     }
@@ -422,21 +817,66 @@ public sealed class LocalPosStore(
             {
                 if (!products.TryGetValue(item.Product.Id, out product) || !product.Active)
                     return SaleResult.Failed($"El producto '{item.Product.Name}' ya no está disponible.");
-                if (enforceInventory && (item.Quantity <= 0 || item.Quantity > product.Stock))
-                    return SaleResult.Failed($"Stock insuficiente para '{product.Name}'.");
-                product.Stock -= item.Quantity;
-                db.InventoryMovements.Add(new LocalInventoryMovement
+
+                var promoComponents = PromotionCatalog.Parse(product.PromotionComponentsJson);
+                if (promoComponents.Count > 0)
                 {
-                    ProductId = product.Id,
-                    ProductCode = product.Code,
-                    ProductName = product.Name,
-                    Quantity = -item.Quantity,
-                    StockBefore = product.Stock + item.Quantity,
-                    StockAfter = product.Stock,
-                    Type = personalConsumption ? "CONSUMO_PERSONAL" : "VENTA",
-                    Reference = "Venta en curso",
-                    UserName = userName
-                });
+                    if (item.Quantity <= 0)
+                        return SaleResult.Failed($"La cantidad de '{product.Name}' debe ser mayor a cero.");
+
+                    foreach (var component in promoComponents)
+                    {
+                        if (!products.TryGetValue(component.ProductId, out var part) || !part.Active)
+                        {
+                            // Cargar componente si no venía en el carrito
+                            part = await db.Products.SingleOrDefaultAsync(x => x.Id == component.ProductId && x.Active, cancellationToken);
+                            if (part is null)
+                                return SaleResult.Failed($"Falta un producto de la promoción '{product.Name}'.");
+                            products[part.Id] = part;
+                        }
+
+                        var need = component.Quantity * item.Quantity;
+                        if (enforceInventory && need > part.Stock)
+                            return SaleResult.Failed($"Stock insuficiente de '{part.Name}' para la promoción '{product.Name}'.");
+
+                        part.Stock -= need;
+                        db.InventoryMovements.Add(new LocalInventoryMovement
+                        {
+                            ProductId = part.Id,
+                            ProductCode = part.Code,
+                            ProductName = part.Name,
+                            Quantity = -need,
+                            StockBefore = part.Stock + need,
+                            StockAfter = part.Stock,
+                            Type = personalConsumption ? "CONSUMO_PERSONAL" : "VENTA_PROMO",
+                            Reference = $"Promoción {product.Code}",
+                            UserName = userName
+                        });
+                    }
+
+                    // Stock de la promoción = kits disponibles tras descontar componentes
+                    product.Stock = PromotionCatalog.AvailableKits(
+                        promoComponents,
+                        id => products.TryGetValue(id, out var p) ? p.Stock : 0m);
+                }
+                else
+                {
+                    if (enforceInventory && (item.Quantity <= 0 || item.Quantity > product.Stock))
+                        return SaleResult.Failed($"Stock insuficiente para '{product.Name}'.");
+                    product.Stock -= item.Quantity;
+                    db.InventoryMovements.Add(new LocalInventoryMovement
+                    {
+                        ProductId = product.Id,
+                        ProductCode = product.Code,
+                        ProductName = product.Name,
+                        Quantity = -item.Quantity,
+                        StockBefore = product.Stock + item.Quantity,
+                        StockAfter = product.Stock,
+                        Type = personalConsumption ? "CONSUMO_PERSONAL" : "VENTA",
+                        Reference = "Venta en curso",
+                        UserName = userName
+                    });
+                }
             }
             else if (item.Quantity <= 0)
             {
@@ -456,24 +896,33 @@ public sealed class LocalPosStore(
                 UnitPrice = netUnitPrice,
                 DiscountPercentage = item.DiscountPercentage,
                 Quantity = item.Quantity,
-                Total = lineTotal
+                Total = lineTotal,
+                UnitCost = isCommon ? 0 : product!.Cost,
+                Department = isCommon
+                    ? "General"
+                    : (string.IsNullOrWhiteSpace(product!.Department) ? "General" : product.Department.Trim())
             });
         }
 
         var subtotal = lines.Sum(x => Math.Round(x.ListUnitPrice * x.Quantity, 2, MidpointRounding.AwayFromZero));
         var discount = Math.Max(0m, subtotal - lines.Sum(x => x.Total));
-        var total = personalConsumption ? 0m : lines.Sum(x => x.Total);
+        // Consumo personal registra el valor de mercadería (reportes/cierre) pero no mueve efectivo.
+        var total = lines.Sum(x => x.Total);
         if (!personalConsumption && paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase))
             receivedAmount = 0;
         else if (!personalConsumption && receivedAmount <= 0)
-            receivedAmount = total;
-        if (!personalConsumption && !paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase) &&
+        {
+            // Transferencia con monto 0 = venta diferida (ex-crédito). Otros métodos asumen pago completo.
+            if (!paymentMethod.Equals("Transferencia", StringComparison.OrdinalIgnoreCase))
+                receivedAmount = total;
+        }
+        if (!personalConsumption &&
+            !paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase) &&
+            !(paymentMethod.Equals("Transferencia", StringComparison.OrdinalIgnoreCase) && receivedAmount <= 0) &&
             receivedAmount < total)
             return SaleResult.Failed("El monto recibido es insuficiente.");
 
-        var session = personalConsumption
-            ? null
-            : await db.CashSessions.SingleOrDefaultAsync(x => x.Id == cashSessionId && x.Open, cancellationToken)
+        var session = await db.CashSessions.SingleOrDefaultAsync(x => x.Id == cashSessionId && x.Open, cancellationToken)
               ?? await db.CashSessions.FirstOrDefaultAsync(x => x.Open, cancellationToken);
         if (!personalConsumption && session is null)
         {
@@ -482,19 +931,26 @@ public sealed class LocalPosStore(
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        var nextTicket = (await db.Sales.Select(x => (long?)x.TicketNumber).MaxAsync(cancellationToken) ?? 0) + 1;
-        var configuredFolio = await db.Settings.AsNoTracking()
-            .Where(x => x.Key == "folio_actual")
-            .Select(x => x.Value)
-            .SingleOrDefaultAsync(cancellationToken);
-        if (long.TryParse(configuredFolio, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requestedFolio))
-            nextTicket = Math.Max(nextTicket, requestedFolio);
-        var ticketNumber = nextTicket;
-        if (ticketNumberOverride is > 0)
-            ticketNumber = ticketNumberOverride.Value;
-        var cashToRegister = cashSessionAmount >= 0
-            ? cashSessionAmount
-            : paymentMethod == "Efectivo" ? total : 0m;
+        var ticketNumber = await AllocateTicketNumberAsync(db, ticketNumberOverride, cancellationToken);
+        if (ticketNumberOverride is > 0 && ticketNumber != ticketNumberOverride.Value)
+        {
+            logger.LogWarning(
+                "Ticket central {CentralTicket} ya existe localmente; se usará folio {LocalTicket}",
+                ticketNumberOverride.Value, ticketNumber);
+        }
+
+        var cashToRegister = personalConsumption
+            ? 0m
+            : cashSessionAmount >= 0
+                ? cashSessionAmount
+                : paymentMethod.Equals("Efectivo", StringComparison.OrdinalIgnoreCase) ? total : 0m;
+        // Efectivo: nunca registrar el monto recibido (incluye vuelto); solo el neto de la venta.
+        if (!personalConsumption &&
+            paymentMethod.Equals("Efectivo", StringComparison.OrdinalIgnoreCase) && cashToRegister > total)
+            cashToRegister = total;
+        if (!personalConsumption &&
+            paymentMethod.Equals("Mixto", StringComparison.OrdinalIgnoreCase) && cashToRegister > total)
+            cashToRegister = total;
         var sale = new LocalSale
         {
             TicketNumber = ticketNumber, UserName = userName, PaymentMethod = paymentMethod,
@@ -506,16 +962,35 @@ public sealed class LocalPosStore(
             CashSessionId = session?.Id, CashSessionAmount = cashToRegister, Lines = lines
         };
         db.Sales.Add(sale);
+        LocalCashMovement? cashMovement = null;
         if (session is not null && cashToRegister > 0)
         {
             session.TotalSales += cashToRegister;
-            db.CashMovements.Add(new LocalCashMovement
+            cashMovement = new LocalCashMovement
             {
                 CashSessionId = session.Id, Type = "VENTA", Amount = cashToRegister,
                 Description = $"Venta Ticket #{ticketNumber}"
-            });
+            };
+            db.CashMovements.Add(cashMovement);
         }
-        await db.SaveChangesAsync(cancellationToken);
+
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                break;
+            }
+            catch (DbUpdateException ex) when (IsSqliteUniqueConstraint(ex) && attempt < 3)
+            {
+                ticketNumber = await AllocateTicketNumberAsync(db, preferredTicket: null, cancellationToken);
+                sale.TicketNumber = ticketNumber;
+                if (cashMovement is not null)
+                    cashMovement.Description = $"Venta Ticket #{ticketNumber}";
+                logger.LogWarning(ex, "Colisión de TicketNumber; reintento con folio {TicketNumber}", ticketNumber);
+            }
+        }
+
         var folioSetting = await db.Settings.SingleOrDefaultAsync(x => x.Key == "folio_actual", cancellationToken);
         if (folioSetting is null)
             db.Settings.Add(new LocalSetting { Key = "folio_actual", Value = (ticketNumber + 1).ToString(CultureInfo.InvariantCulture) });
@@ -623,10 +1098,30 @@ public sealed class LocalPosStore(
         if (string.IsNullOrWhiteSpace(code))
             return false;
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        if (await db.Products.AnyAsync(x => x.Code == code.Trim(), cancellationToken))
+        var existingImport = await db.Products.FirstOrDefaultAsync(x => x.Code == code.Trim(), cancellationToken);
+        if (existingImport is not null && existingImport.Active)
             return false;
         var normalizedDepartment = string.IsNullOrWhiteSpace(department) ? "General" : department.Trim();
         var normalizedSaleType = string.IsNullOrWhiteSpace(saleType) ? "Unidad" : saleType.Trim();
+        if (existingImport is not null && !existingImport.Active)
+        {
+            existingImport.Active = true;
+            existingImport.Name = string.IsNullOrWhiteSpace(name) ? $"Producto {code.Trim()}" : name.Trim();
+            existingImport.Category = normalizedDepartment;
+            existingImport.Department = normalizedDepartment;
+            existingImport.Cost = cost ?? 0;
+            existingImport.Price = price ?? 0;
+            existingImport.WholesalePrice = wholesalePrice ?? 0;
+            existingImport.Stock = stock;
+            existingImport.MinStock = minStock ?? 0;
+            existingImport.MaxStock = maxStock ?? 0;
+            existingImport.SaleType = normalizedSaleType;
+            existingImport.Unit = normalizedSaleType;
+            existingImport.IsFavorite = false;
+            existingImport.PromotionComponentsJson = string.Empty;
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
         var product = new LocalProduct
         {
             Code = code.Trim(),
@@ -693,6 +1188,21 @@ public sealed class LocalPosStore(
         return await db.CashSessions.AsNoTracking().FirstOrDefaultAsync(x => x.Open, cancellationToken);
     }
 
+    /// <summary>
+    /// Recalcula TotalSales del turno abierto (neto, sin vuelto) y devuelve la sesión actualizada.
+    /// </summary>
+    public async Task<LocalCashSession?> ReconcileAndGetOpenCashSessionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var session = await db.CashSessions.FirstOrDefaultAsync(x => x.Open, cancellationToken);
+        if (session is null)
+            return null;
+        await ReconcileSessionCashSalesAsync(db, session, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return session;
+    }
+
     public async Task<bool> RegisterCashMovementAsync(string userName, string type, decimal amount,
         string description, CancellationToken cancellationToken = default)
     {
@@ -719,6 +1229,8 @@ public sealed class LocalPosStore(
         var session = await db.CashSessions.FirstOrDefaultAsync(x => x.Open, cancellationToken);
         if (session is null)
             return false;
+        // Recalcula el efectivo de ventas desde las ventas del turno (corrige vuelto mal registrado).
+        await ReconcileSessionCashSalesAsync(db, session, cancellationToken);
         var expected = session.OpeningAmount + session.TotalSales + session.TotalEntries - session.TotalExits;
         session.ClosingAmount = closingAmount;
         session.Difference = closingAmount - expected;
@@ -726,6 +1238,42 @@ public sealed class LocalPosStore(
         session.Open = false;
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    /// <summary>
+    /// Alinea TotalSales y CashSessionAmount de efectivo al neto de cada venta
+    /// (Total), para que la cuadratura no incluya vuelto.
+    /// </summary>
+    internal static async Task ReconcileSessionCashSalesAsync(
+        LocalPosDbContext db, LocalCashSession session, CancellationToken cancellationToken)
+    {
+        var sales = await db.Sales
+            .Where(x => x.CashSessionId == session.Id && !x.Cancelled && !x.PersonalConsumption)
+            .ToListAsync(cancellationToken);
+        decimal cashSales = 0m;
+        foreach (var sale in sales)
+        {
+            var impact = ComputeSaleCashDrawerImpact(sale);
+            if (sale.PaymentMethod.Equals("Efectivo", StringComparison.OrdinalIgnoreCase) &&
+                sale.CashSessionAmount != impact)
+                sale.CashSessionAmount = impact;
+            cashSales += impact;
+        }
+
+        session.TotalSales = cashSales;
+    }
+
+    /// <summary>Impacto neto en el cajón de efectivo de una venta (sin vuelto).</summary>
+    internal static decimal ComputeSaleCashDrawerImpact(LocalSale sale)
+    {
+        if (sale.PersonalConsumption || sale.Cancelled)
+            return 0m;
+        var method = sale.PaymentMethod?.Trim() ?? string.Empty;
+        if (method.Equals("Efectivo", StringComparison.OrdinalIgnoreCase))
+            return Math.Max(0m, sale.Total);
+        if (method.Equals("Mixto", StringComparison.OrdinalIgnoreCase))
+            return Math.Clamp(sale.CashSessionAmount, 0m, Math.Max(0m, sale.Total));
+        return 0m;
     }
 
     public async Task<string> GetSettingAsync(string key, string defaultValue = "",
@@ -988,7 +1536,8 @@ public sealed class LocalPosStore(
 
 public sealed record PosProduct(int Id, string Code, string Name, string Category, decimal Price, decimal Stock, string Unit, string Accent, int? CentralProductId = null,
     decimal Cost = 0, decimal WholesalePrice = 0, decimal MinStock = 0, decimal MaxStock = 0,
-    string SaleType = "Unidad", string Department = "General");
+    string SaleType = "Unidad", string Department = "General", bool IsFavorite = false,
+    string PromotionComponentsJson = "");
 public sealed record ProductWriteResult(bool Success, string Message, int ProductId = 0)
 {
     public static ProductWriteResult Successful(int productId, string message) => new(true, message, productId);
@@ -1015,3 +1564,50 @@ public sealed record InventoryMovementInfo(DateTime CreatedAtUtc, string Product
 public sealed record InvoiceEmissionInfo(
     long Id, long TicketNumber, string DocumentType, string Status, string ProviderDocumentId,
     string ProviderFolio, string Message, DateTime CreatedAtUtc);
+
+public sealed record PromotionComponentInput(int ProductId, decimal Quantity);
+
+public sealed record PromotionCartDetail(string Code, string Name, decimal QuantityPerPromo, decimal Price, decimal Stock);
+
+public static class PromotionCatalog
+{
+    public static IReadOnlyList<PromotionComponentInput> Parse(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return Array.Empty<PromotionComponentInput>();
+        try
+        {
+            var list = JsonSerializer.Deserialize<List<PromotionComponentInput>>(json);
+            return list?.Where(x => x.ProductId > 0 && x.Quantity > 0).ToArray()
+                   ?? Array.Empty<PromotionComponentInput>();
+        }
+        catch
+        {
+            return Array.Empty<PromotionComponentInput>();
+        }
+    }
+
+    public static string Serialize(IEnumerable<PromotionComponentInput> components) =>
+        JsonSerializer.Serialize(components.Select(x => new PromotionComponentInput(x.ProductId, x.Quantity)).ToArray());
+
+    public static decimal AvailableKits(
+        IReadOnlyList<PromotionComponentInput> components,
+        Func<int, decimal> stockByProductId)
+    {
+        if (components.Count == 0)
+            return 0m;
+        decimal? kits = null;
+        foreach (var component in components)
+        {
+            if (component.Quantity <= 0)
+                return 0m;
+            var available = Math.Floor(stockByProductId(component.ProductId) / component.Quantity);
+            kits = kits is null ? available : Math.Min(kits.Value, available);
+        }
+        return kits ?? 0m;
+    }
+
+    public static bool IsPromotion(PosProduct product) =>
+        PromotionCatalog.Parse(product.PromotionComponentsJson).Count > 0
+        || product.SaleType.Equals("Promoción", StringComparison.OrdinalIgnoreCase);
+}

@@ -1,0 +1,80 @@
+@*
+  Patrón cinético reutilizable (SVG). Solo decorativo; no captura eventos.
+*@
+<svg class="@CssClass"
+     style="opacity:@Opacity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+     viewBox="@ViewBox"
+     xmlns="http://www.w3.org/2000/svg"
+     aria-hidden="@(Decorative ? "true" : null)"
+     focusable="false">
+    @if (Variant == "empty")
+    {
+        @* Esquinas empty-state: líneas paralelas mono-azul con chaflán 45° (como la captura). *@
+        <g fill="none" stroke="#7eb6e8" stroke-width="1.75" stroke-linecap="butt" stroke-linejoin="miter">
+            <path d="M0 18 H168 L196 46 V160" opacity="0.95" />
+            <path d="M0 32 H154 L182 60 V160" opacity="0.88" />
+            <path d="M0 46 H140 L168 74 V160" opacity="0.78" />
+            <path d="M0 60 H126 L154 88 V160" opacity="0.68" />
+            <path d="M0 74 H112 L140 102 V160" opacity="0.58" />
+            <path d="M0 88 H98 L126 116 V160" opacity="0.48" />
+        </g>
+    }
+    else if (Variant == "dark")
+    {
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="@PathA" stroke="#55ddf0" stroke-width="2.2" />
+            <path d="@PathB" stroke="#64e572" stroke-width="2.2" />
+            <path d="@PathC" stroke="#0077e6" stroke-width="2.2" />
+            <path d="@PathD" stroke="#ff7a21" stroke-width="2.2" />
+            <path d="@PathE" stroke="#55ddf0" stroke-width="2.2" />
+            <path d="@PathF" stroke="#64e572" stroke-width="2.2" />
+        </g>
+    }
+    else if (Variant == "light")
+    {
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="@PathA" stroke="#0077e6" stroke-width="2" opacity="0.35" />
+            <path d="@PathB" stroke="#55ddf0" stroke-width="2" opacity="0.4" />
+            <path d="@PathC" stroke="#64e572" stroke-width="2" opacity="0.35" />
+            <path d="@PathD" stroke="#ff7a21" stroke-width="2" opacity="0.3" />
+            <path d="@PathE" stroke="#0077e6" stroke-width="2" opacity="0.28" />
+            <path d="@PathF" stroke="#55ddf0" stroke-width="2" opacity="0.32" />
+        </g>
+    }
+    else
+    {
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="@PathA" stroke="#0077e6" stroke-width="2.25" />
+            <path d="@PathB" stroke="#64e572" stroke-width="2.25" />
+            <path d="@PathC" stroke="#55ddf0" stroke-width="2.25" />
+            <path d="@PathD" stroke="#ff7a21" stroke-width="2.25" />
+            <path d="@PathE" stroke="#0077e6" stroke-width="2.25" />
+            <path d="@PathF" stroke="#64e572" stroke-width="2.25" />
+            <path d="@PathG" stroke="#55ddf0" stroke-width="2.25" />
+        </g>
+    }
+</svg>
+
+@code {
+    [Parameter] public string Position { get; set; } = "top-left";
+    [Parameter] public string Variant { get; set; } = "multicolor";
+    [Parameter] public double Opacity { get; set; } = 0.85;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public bool Decorative { get; set; } = true;
+
+    private string CssClass =>
+        string.IsNullOrWhiteSpace(Class)
+            ? $"kinetic-lines kinetic-lines--{Position}"
+            : $"kinetic-lines kinetic-lines--{Position} {Class}";
+
+    private string ViewBox => Variant == "empty" ? "0 0 240 160" : "0 0 220 140";
+
+    // Líneas paralelas con giro redondeado de 90° (rx=18).
+    private const string PathA = "M12 28 H132 Q150 28 150 46 V118";
+    private const string PathB = "M12 40 H124 Q142 40 142 58 V118";
+    private const string PathC = "M12 52 H116 Q134 52 134 70 V118";
+    private const string PathD = "M12 64 H108 Q126 64 126 82 V118";
+    private const string PathE = "M12 76 H100 Q118 76 118 94 V118";
+    private const string PathF = "M12 88 H92 Q110 88 110 106 V118";
+    private const string PathG = "M12 100 H84 Q102 100 102 118";
+}

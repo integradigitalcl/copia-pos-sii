@@ -429,6 +429,25 @@ public sealed class MulticajaOperacionesController : ControllerBase
         Rol = u.Rol
     };
 
+    /// <summary>Recibe el catálogo de una caja y lo crea/actualiza en la base central.</summary>
+    [HttpPost("productos/upsert")]
+    [ProducesResponseType(typeof(MulticajaProductoUpsertResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MulticajaProductoUpsertResponse>> UpsertProductos(
+        [FromBody] List<MulticajaProductoDto>? body, CancellationToken ct)
+    {
+        try
+        {
+            var items = body ?? new List<MulticajaProductoDto>();
+            var upserted = await MulticajaProductoResolve.UpsertLoteAsync(_pos, items, ct);
+            return Ok(new MulticajaProductoUpsertResponse { Ok = true, Upserted = upserted });
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "multicaja.productos upsert falló");
+            return Ok(new MulticajaProductoUpsertResponse { Ok = false, Error = ex.Message });
+        }
+    }
+
     [HttpGet("productos")]
     [ProducesResponseType(typeof(List<MulticajaProductoDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<MulticajaProductoDto>>> ListarProductos(CancellationToken ct)

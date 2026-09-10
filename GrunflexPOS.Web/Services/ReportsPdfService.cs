@@ -16,7 +16,7 @@ public sealed class ReportsPdfService
             page.Header().Column(column =>
             {
                 column.Item().Text("GRUNFLEX POS").FontSize(20).Bold().FontColor("#183B56");
-                column.Item().Text("Reporte de operación").FontSize(12).SemiBold();
+                column.Item().Text("Reportes de ventas").FontSize(12).SemiBold();
                 column.Item().Text($"Periodo: {fromLocal:dd/MM/yyyy HH:mm} al {toLocal:dd/MM/yyyy HH:mm}")
                     .FontColor("#52606D");
             });
@@ -32,11 +32,58 @@ public sealed class ReportsPdfService
                         columns.RelativeColumn();
                         columns.RelativeColumn();
                     });
-                    AddMetric(table, "Ventas", report.Total.ToString("C0"), "#2563EB");
-                    AddMetric(table, "Transacciones", report.Transactions.ToString(), "#16A34A");
-                    AddMetric(table, "Ticket promedio", report.AverageTicket.ToString("C0"), "#7C3AED");
-                    AddMetric(table, "Variación", $"{report.Variation:0.##}%", "#EA580C");
+                    AddMetric(table, "Ventas totales", report.Total.ToString("C0"), "#2563EB");
+                    AddMetric(table, "Ganancia", report.Profit.ToString("C0"), "#0D9488");
+                    AddMetric(table, "Nº ventas", report.Transactions.ToString(), "#7C3AED");
+                    AddMetric(table, "Margen", $"{report.AvgMargin:0.##}%", "#EA580C");
                 });
+
+                AddHeading(column, "Ventas por día");
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                    });
+                    AddHeader(table, "Día", "Ventas", "Ganancia");
+                    foreach (var day in report.DaySeries)
+                    {
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).Text(day.Label);
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
+                            .Text(day.Sales.ToString("C0"));
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
+                            .Text(day.Profit.ToString("C0"));
+                    }
+                });
+
+                AddHeading(column, "Ventas por departamento");
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                    });
+                    table.Cell().Background("#EAF1F7").Padding(5).Text("Departamento").Bold();
+                    table.Cell().Background("#EAF1F7").Padding(5).AlignRight().Text("Ventas").Bold();
+                    table.Cell().Background("#EAF1F7").Padding(5).AlignRight().Text("Ganancia").Bold();
+                    table.Cell().Background("#EAF1F7").Padding(5).AlignRight().Text("%").Bold();
+                    foreach (var dept in report.Departments)
+                    {
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).Text(dept.Department);
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
+                            .Text(dept.Revenue.ToString("C0"));
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
+                            .Text(dept.Profit.ToString("C0"));
+                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
+                            .Text($"{dept.SharePercent:0.0}%");
+                    }
+                });
+
                 AddHeading(column, "Métodos de pago");
                 column.Item().Table(table =>
                 {
@@ -55,26 +102,10 @@ public sealed class ReportsPdfService
                             .Text(payment.Total.ToString("C0"));
                     }
                 });
-                AddHeading(column, "Productos más vendidos");
-                column.Item().Table(table =>
-                {
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.RelativeColumn(2);
-                        columns.RelativeColumn();
-                        columns.RelativeColumn();
-                    });
-                    AddHeader(table, "Producto", "Unidades", "Ingresos");
-                    foreach (var product in report.TopProducts)
-                    {
-                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5)
-                            .Text($"{product.Name} ({product.Code})");
-                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5)
-                            .Text(product.Quantity.ToString("0.##"));
-                        table.Cell().BorderBottom(1).BorderColor("#E5E7EB").Padding(5).AlignRight()
-                            .Text(product.Revenue.ToString("C0"));
-                    }
-                });
+
+                AddHeading(column, "Impuestos");
+                column.Item().Text(
+                    $"IVA ({report.TaxRate:0.####}%) · Cobrado: {report.TaxCollected:C0} · Ventas gravadas: {report.TaxableSales:C0}");
             });
             page.Footer().AlignCenter().Text(text =>
             {

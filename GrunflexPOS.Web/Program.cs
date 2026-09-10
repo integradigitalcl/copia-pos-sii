@@ -216,14 +216,13 @@ if (args.Contains("--bootstrap-first-run", StringComparer.OrdinalIgnoreCase) ||
         var store = scope.ServiceProvider.GetRequiredService<LocalPosStore>();
         await store.EnsureCreatedAsync();
         app.Logger.LogInformation("Bootstrap first-run OK. Database={DatabasePath}", databasePath);
-        Environment.ExitCode = 0;
-        return;
+        // Exit (y no ExitCode + return): como WinExe el proceso no propagaba el código al instalador.
+        Environment.Exit(0);
     }
     catch (Exception ex)
     {
         app.Logger.LogError(ex, "Bootstrap first-run failed for {DatabasePath}", databasePath);
-        Environment.ExitCode = 1;
-        return;
+        Environment.Exit(1);
     }
 }
 

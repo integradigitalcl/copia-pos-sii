@@ -58,6 +58,9 @@ public sealed class LocalProduct
     public string Accent { get; set; } = "#2563EB";
     public int? CentralProductId { get; set; }
     public bool Active { get; set; } = true;
+    public bool IsFavorite { get; set; }
+    /// <summary>JSON de componentes de promoción: [{"ProductId":1,"Quantity":2}]</summary>
+    public string PromotionComponentsJson { get; set; } = string.Empty;
 }
 
 public sealed class LocalSale
@@ -98,6 +101,10 @@ public sealed class LocalSaleLine
     public decimal DiscountPercentage { get; set; }
     public decimal Quantity { get; set; }
     public decimal Total { get; set; }
+    /// <summary>Costo unitario al momento de la venta (snapshot).</summary>
+    public decimal UnitCost { get; set; }
+    /// <summary>Departamento al momento de la venta (snapshot). Vacío en líneas legacy.</summary>
+    public string Department { get; set; } = string.Empty;
 }
 
 public sealed class LocalSaleEdit

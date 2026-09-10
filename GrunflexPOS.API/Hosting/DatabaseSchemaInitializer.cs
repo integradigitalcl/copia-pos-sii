@@ -285,6 +285,7 @@ try
     var posDb = scopePos.ServiceProvider.GetRequiredService<PosCommerceDbContext>();
     if (posDb.Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
     {
+        await EnsureCommerceCoreSqliteAsync(posDb);
         await posDb.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "MulticajaVentaIdempotency" (
                 "RequestId" TEXT NOT NULL PRIMARY KEY,
@@ -361,6 +362,101 @@ catch (Exception ex)
     Log.Warning(ex, "No se pudo migrar contraseñas legacy a BCrypt en BD POS");
 }
 
+    }
+
+    /// <summary>Crea las tablas base de comercio en SQLite cuando la BD del POS aún no tiene esquema.</summary>
+    private static async Task EnsureCommerceCoreSqliteAsync(PosCommerceDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "Empresas" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_Empresas" PRIMARY KEY,
+                "Nombre" TEXT NOT NULL,
+                "FechaCreacion" TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS "Cajas" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_Cajas" PRIMARY KEY,
+                "Nombre" TEXT NOT NULL,
+                "EmpresaId" TEXT NOT NULL,
+                "Activa" INTEGER NOT NULL,
+                "FechaCreacion" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS "IX_Cajas_EmpresaId" ON "Cajas" ("EmpresaId");
+            CREATE TABLE IF NOT EXISTS "Usuarios" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_Usuarios" PRIMARY KEY,
+                "Username" TEXT NOT NULL,
+                "Password" TEXT NOT NULL,
+                "Nombre" TEXT NOT NULL,
+                "Rol" TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Usuarios_Username" ON "Usuarios" ("Username");
+            CREATE TABLE IF NOT EXISTS "CajaSesiones" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_CajaSesiones" PRIMARY KEY,
+                "CajaId" TEXT NOT NULL,
+                "NumeroCaja" INTEGER NOT NULL,
+                "Cajero" TEXT NOT NULL,
+                "UsuarioAperturaId" TEXT NOT NULL,
+                "UsuarioCierreId" TEXT NULL,
+                "FechaApertura" TEXT NOT NULL,
+                "MontoApertura" TEXT NOT NULL,
+                "FechaCierre" TEXT NULL,
+                "MontoCierre" TEXT NULL,
+                "Diferencia" TEXT NOT NULL,
+                "TotalVentas" TEXT NOT NULL,
+                "TotalIngresos" TEXT NOT NULL,
+                "TotalRetiros" TEXT NOT NULL,
+                "Abierta" INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS "IX_CajaSesiones_CajaId" ON "CajaSesiones" ("CajaId");
+            CREATE TABLE IF NOT EXISTS "MovimientosCaja" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_MovimientosCaja" PRIMARY KEY,
+                "CajaSesionId" TEXT NOT NULL,
+                "Fecha" TEXT NOT NULL,
+                "Tipo" TEXT NOT NULL,
+                "Monto" TEXT NOT NULL,
+                "Descripcion" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS "IX_MovimientosCaja_CajaSesionId" ON "MovimientosCaja" ("CajaSesionId");
+            CREATE TABLE IF NOT EXISTS "Productos" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK_Productos" PRIMARY KEY AUTOINCREMENT,
+                "Nombre" TEXT NOT NULL,
+                "Costo" TEXT NOT NULL,
+                "Precio" TEXT NOT NULL,
+                "Stock" INTEGER NOT NULL,
+                "CodigoBarras" TEXT NOT NULL,
+                "PrecioMayoreo" TEXT NOT NULL,
+                "InvMinimo" INTEGER NOT NULL,
+                "InvMaximo" INTEGER NOT NULL,
+                "TipoVenta" TEXT NOT NULL,
+                "Departamento" TEXT NOT NULL,
+                "CategoriaId" INTEGER NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Productos_CodigoBarras" ON "Productos" ("CodigoBarras");
+            CREATE TABLE IF NOT EXISTS "Ventas" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_Ventas" PRIMARY KEY,
+                "NumeroTicket" INTEGER NOT NULL,
+                "Fecha" TEXT NOT NULL,
+                "Total" TEXT NOT NULL,
+                "NumeroCaja" INTEGER NOT NULL,
+                "CajaId" TEXT NOT NULL,
+                "Cajero" TEXT NOT NULL,
+                "Cliente" TEXT NOT NULL,
+                "MetodoPago" TEXT NOT NULL,
+                "EstaAnulada" INTEGER NOT NULL,
+                "FechaAnulacion" TEXT NULL,
+                "UsuarioId" TEXT NOT NULL,
+                "CajaSesionId" TEXT NOT NULL,
+                "EsConsumoPersonal" INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS "DetalleVentas" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_DetalleVentas" PRIMARY KEY,
+                "VentaId" TEXT NOT NULL,
+                "CodigoBarras" TEXT NULL,
+                "Producto" TEXT NOT NULL,
+                "Cantidad" INTEGER NOT NULL,
+                "Precio" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS "IX_DetalleVentas_VentaId" ON "DetalleVentas" ("VentaId");
+            """);
     }
 
     private static bool IsSchemaAlreadyApplied(Exception ex)

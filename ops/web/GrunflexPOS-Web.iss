@@ -8,7 +8,7 @@
 [Setup]
 AppId={{B68A0F9C-9A31-4F3F-9D50-4F2D1CFB7A61}
 AppName=Grunflex POS Web
-AppVersion=1.2.1
+AppVersion=1.2.5
 DefaultDirName={autopf}\GrunflexPOS Web
 DefaultGroupName=Grunflex POS Web
 OutputDir=out
@@ -52,6 +52,7 @@ Source: "{#Staging}\Tools\SeedAdmin\*"; DestDir: "{app}\Tools\SeedAdmin"; Flags:
 Source: "{#Staging}\grunflex-pos.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: web
 
 [Dirs]
+; Solo crea carpetas de datos; nunca borra .db existentes (actualización conserva productos/ventas).
 Name: "{commonappdata}\GrunflexPOS\Web"
 Name: "{commonappdata}\GrunflexPOS\data"
 Name: "{commonappdata}\GrunflexPOS\config"
@@ -93,4 +94,12 @@ begin
     WizardForm.PageNameLabel.Caption := 'Tipo de instalación';
     WizardForm.PageDescriptionLabel.Caption := 'Caja principal: POS Web + API multicaja. Caja adicional: detecta la principal en la red, configura la conexión y verifica que responda antes de terminar.';
   end;
+end;
+
+function InitializeSetup: Boolean;
+begin
+  // Actualización / reinstalación: no se borran
+  // %LocalAppData%\GrunflexPOS\grunflex-pos.db ni %ProgramData%\GrunflexPOS\data\grunflex.db.
+  // PC nueva (sin esas bases) arranca sin productos e inventario en 0.
+  Result := True;
 end;

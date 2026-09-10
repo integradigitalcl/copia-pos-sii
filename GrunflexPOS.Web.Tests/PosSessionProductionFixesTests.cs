@@ -59,8 +59,7 @@ public sealed class PosSessionProductionFixesTests : IDisposable
     [Fact]
     public async Task SyncCentralProducts_UpdatesLocalStock_AndCartSnapshot()
     {
-        await _store.EnsureCreatedAsync();
-        var product = (await _store.GetProductsAsync()).First();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
         var line = new CartLine(product, 1m, product.Price);
 
         await _store.SyncCentralProductsAsync([
@@ -107,8 +106,7 @@ public sealed class PosSessionProductionFixesTests : IDisposable
     [Fact]
     public async Task ConcurrentCatalogSync_DoesNotLoseStockUpdate()
     {
-        await _store.EnsureCreatedAsync();
-        var product = (await _store.GetProductsAsync()).First();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
         var dto = new MulticajaProductDto
         {
             Id = product.CentralProductId ?? product.Id,

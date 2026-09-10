@@ -2,6 +2,7 @@ using System.Reflection;
 using GrunflexPOS.Web.Data;
 using GrunflexPOS.Web.Services;
 using GrunflexPOS.Web.Services.Licensing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -92,8 +93,7 @@ public sealed class CrossCajaStockSyncStressTests : IDisposable
     [Fact]
     public async Task ConcurrentSync_OnSingleCaja_AppliesStockWithoutException()
     {
-        await _principal.EnsureCreatedAsync();
-        var seed = (await _principal.GetProductsAsync()).First();
+        var seed = await TestConfiguration.EnsureSampleProductAsync(_principal);
         var centralId = seed.CentralProductId ?? seed.Id;
 
         var syncTasks = Enumerable.Range(0, 8)
@@ -203,7 +203,7 @@ public sealed class CrossCajaStockSyncStressTests : IDisposable
 
     private async Task SeedBothAsync()
     {
-        await _principal.EnsureCreatedAsync();
+        await TestConfiguration.EnsureSampleProductAsync(_principal);
         await _adicional.EnsureCreatedAsync();
     }
 
@@ -241,9 +241,8 @@ public sealed class CrossCajaStockSyncStressTests : IDisposable
     {
         var dbPath = Path.Combine(Path.GetTempPath(), $"grunflex-session-{Guid.NewGuid():N}.db");
         var store = CreateStore(dbPath);
-        await store.EnsureCreatedAsync();
+        var product = await TestConfiguration.EnsureSampleProductAsync(store);
         var session = PosSessionTestFactory.Create(store);
-        var product = (await store.GetProductsAsync()).First();
 
         var schedule = typeof(PosSessionState).GetMethod(
             "ScheduleSaleMessageDismissal",
@@ -358,19 +357,33 @@ internal static class PosSessionTestFactory
         var offlineQueue = new MulticajaOfflineQueue(NullLogger<MulticajaOfflineQueue>.Instance);
         var tokenResolver = new BridgeTokenResolver(
             config, hostEnvironment, NullLogger<BridgeTokenResolver>.Instance);
+        var webEnv = new TestWebHostEnvironment();
+        var logo = new PosLogoService(store, webEnv);
+        var ticketTemplate = new TicketTemplateService(store);
         var hardware = new HardwareBridgeClient(
-            httpClient, config, NullLogger<HardwareBridgeClient>.Instance, store, tokenResolver);
-        var boleta = new BoletaPdfService(NullLogger<BoletaPdfService>.Instance);
+            httpClient, config, NullLogger<HardwareBridgeClient>.Instance, store, tokenResolver,
+            ticketTemplate, logo);
+        var boleta = new BoletaPdfService(logo, NullLogger<BoletaPdfService>.Instance);
         var multicaja = new MulticajaClient(
             httpClient, config, store, offlineQueue, licenseState, NullLogger<MulticajaClient>.Instance);
         var licensingCloud = new LicensingCloudClient(
             httpFactory, store, licenseService, licenseState, config, NullLogger<LicensingCloudClient>.Instance);
         var email = new PosEmailService(store, boleta, NullLogger<PosEmailService>.Instance);
         var invoice = new InvoiceEmissionService(store, httpFactory, NullLogger<InvoiceEmissionService>.Instance);
+        var reportsDb = Path.Combine(Path.GetTempPath(), $"grunflex-reports-session-{Guid.NewGuid():N}.db");
+        var reportsOptions = new DbContextOptionsBuilder<LocalPosDbContext>()
+            .UseSqlite($"Data Source={reportsDb}").Options;
+        var reports = new LocalReportsService(new ReportsDbFactory(reportsOptions));
 
         return new PosSessionState(
             store, hardware, boleta, multicaja, licenseState, licensingCloud, email, invoice,
-            NullLogger<PosSessionState>.Instance);
+            reports, NullLogger<PosSessionState>.Instance);
+    }
+
+    private sealed class ReportsDbFactory(DbContextOptions<LocalPosDbContext> options)
+        : IDbContextFactory<LocalPosDbContext>
+    {
+        public LocalPosDbContext CreateDbContext() => new(options);
     }
 
     private sealed class SingleHttpClientFactory(HttpClient client) : IHttpClientFactory
@@ -384,6 +397,18 @@ internal static class PosSessionTestFactory
         public string ApplicationName { get; set; } = "GrunflexPOS.Web.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public IFileProvider ContentRootFileProvider { get; set; } =
+            new PhysicalFileProvider(AppContext.BaseDirectory);
+    }
+
+    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "GrunflexPOS.Web.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public string WebRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } =
+            new PhysicalFileProvider(AppContext.BaseDirectory);
+        public IFileProvider WebRootFileProvider { get; set; } =
             new PhysicalFileProvider(AppContext.BaseDirectory);
     }
 }

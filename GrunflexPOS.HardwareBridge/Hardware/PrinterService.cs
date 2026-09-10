@@ -22,7 +22,8 @@ public sealed class PrinterService
         RawPrinterWriter.Send(requested, bytes);
     }
 
-    public void PrintText(string printerName, string text, byte[]? logoPng = null, bool logoMonochrome = true)
+    public void PrintText(string printerName, string text, byte[]? logoPng = null, bool logoMonochrome = true,
+        int paperWidthMm = 80)
     {
         var requested = RequireInstalledPrinter(printerName);
         if (string.IsNullOrWhiteSpace(text))
@@ -33,11 +34,16 @@ public sealed class PrinterService
         if (!document.PrinterSettings.IsValid)
             throw new InvalidOperationException($"The printer '{requested}' is not valid.");
 
-        // Keep margins tight so the receipt column sits near the printable area.
-        document.DefaultPageSettings.Margins = new Margins(40, 40, 40, 40);
+        // 58mm: márgenes mínimos y alinear a la izquierda (evita el hueco izquierdo que recorta la derecha).
+        // 80mm/hoja: márgenes moderados y columna centrada (drivers A4/letter).
+        var narrow = paperWidthMm <= 58;
+        var margin = narrow ? 4 : 40;
+        document.DefaultPageSettings.Margins = new Margins(margin, margin, margin, margin);
 
         Image? logoImage = logoPng is { Length: > 0 }
-            ? TicketLogoProcessor.CreatePrintBitmap(logoPng, logoMonochrome)
+            ? TicketLogoProcessor.CreatePrintBitmap(logoPng, logoMonochrome,
+                narrow ? 180f : TicketLogoProcessor.MaxLogoWidthPx,
+                narrow ? 40f : TicketLogoProcessor.MaxLogoHeightPx)
             : null;
 
         var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
@@ -45,29 +51,40 @@ public sealed class PrinterService
         var logoDrawn = false;
         document.PrintPage += (_, e) =>
         {
-            using var font = new Font("Consolas", 9);
+            using var font = new Font("Consolas", narrow ? 7f : 9f);
             var graphics = e.Graphics ?? throw new InvalidOperationException("Printer graphics are unavailable.");
             graphics.PageUnit = GraphicsUnit.Display;
 
-            // Constrain content to receipt width and center that column on the page
-            // (Brother A4/letter drivers otherwise center a huge logo on the full sheet).
             var pageLeft = e.MarginBounds.Left;
             var pageWidth = e.MarginBounds.Width;
-            var contentWidth = Math.Min(TicketLogoProcessor.TicketContentWidthPx, pageWidth);
-            var contentLeft = pageLeft + (pageWidth - contentWidth) / 2f;
+            float contentWidth;
+            float contentLeft;
+            if (narrow)
+            {
+                contentWidth = pageWidth;
+                contentLeft = pageLeft;
+            }
+            else
+            {
+                // Constrain content to receipt width and center that column on the page
+                // (Brother A4/letter drivers otherwise center a huge logo on the full sheet).
+                contentWidth = Math.Min(TicketLogoProcessor.TicketContentWidthPx, pageWidth);
+                contentLeft = pageLeft + (pageWidth - contentWidth) / 2f;
+            }
             float top = e.MarginBounds.Top;
             var bottom = e.MarginBounds.Bottom;
             var lineHeight = font.GetHeight(graphics);
 
             if (!logoDrawn && logoImage is not null)
             {
-                var maxLogoWidth = Math.Min(TicketLogoProcessor.MaxLogoWidthPx, contentWidth);
-                var scale = Math.Min(maxLogoWidth / logoImage.Width, TicketLogoProcessor.MaxLogoHeightPx / logoImage.Height);
+                var maxLogoWidth = Math.Min(narrow ? 180f : TicketLogoProcessor.MaxLogoWidthPx, contentWidth);
+                var scale = Math.Min(maxLogoWidth / logoImage.Width,
+                    (narrow ? 40f : TicketLogoProcessor.MaxLogoHeightPx) / logoImage.Height);
                 var width = Math.Max(1f, logoImage.Width * scale);
                 var height = Math.Max(1f, logoImage.Height * scale);
                 // Align with ticket text: flush left of the receipt column.
                 graphics.DrawImage(logoImage, contentLeft, top, width, height);
-                top += height + 8f;
+                top += height + (narrow ? 4f : 8f);
                 logoDrawn = true;
             }
 
@@ -97,6 +114,18 @@ public sealed class PrinterService
         using var buffer = new MemoryStream();
         buffer.WriteByte(0x1B);
         buffer.WriteByte(0x40);
+        // GS L — margen izquierdo 0 (algunas térmicas 58mm arrastran margen de fábrica).
+        buffer.WriteByte(0x1D);
+        buffer.WriteByte(0x4C);
+        buffer.WriteByte(0x00);
+        buffer.WriteByte(0x00);
+        if (paperWidthMm <= 58)
+        {
+            // ESC M 1 — Font B (más angosta) para que quepan ~32 columnas en 58mm.
+            buffer.WriteByte(0x1B);
+            buffer.WriteByte(0x4D);
+            buffer.WriteByte(0x01);
+        }
         if (logoPng is { Length: > 0 })
         {
             var raster = EscPosImageEncoder.EncodePng(logoPng, paperWidthMm, logoMonochrome);

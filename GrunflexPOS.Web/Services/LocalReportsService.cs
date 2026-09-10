@@ -1,3 +1,4 @@
+using System.Globalization;
 using GrunflexPOS.Web.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -5,8 +6,12 @@ namespace GrunflexPOS.Web.Services;
 
 public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbFactory)
 {
+    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-CL");
+
     public async Task<ReportDashboard> GetDashboardAsync(
-        DateTime fromLocal, DateTime toLocal, CancellationToken cancellationToken = default)
+        DateTime fromLocal, DateTime toLocal,
+        decimal ivaPercent = 19m, bool pricesIncludeTax = true,
+        CancellationToken cancellationToken = default)
     {
         var fromUtc = fromLocal.ToUniversalTime();
         var toUtc = toLocal.ToUniversalTime();
@@ -21,10 +26,45 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
         var previousFromUtc = fromLocal.Subtract(previousLength).ToUniversalTime();
         var previousToUtc = fromLocal.ToUniversalTime();
         var previousSales = await db.Sales.AsNoTracking()
+            .Include(x => x.Lines)
             .Where(x => x.CreatedAtUtc >= previousFromUtc && x.CreatedAtUtc < previousToUtc &&
                         !x.Cancelled && !x.PersonalConsumption)
-            .Select(x => x.Total).ToListAsync(cancellationToken);
-        var previousTotal = previousSales.Sum();
+            .ToListAsync(cancellationToken);
+
+        var productIds = valid.SelectMany(x => x.Lines).Select(x => x.ProductId)
+            .Concat(previousSales.SelectMany(x => x.Lines).Select(x => x.ProductId))
+            .Where(id => id > 0).Distinct().ToArray();
+        var productMeta = await db.Products.AsNoTracking()
+            .Where(x => productIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.Cost, x.Department })
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        decimal LineCost(LocalSaleLine line)
+        {
+            if (line.UnitCost > 0)
+                return line.UnitCost;
+            return productMeta.TryGetValue(line.ProductId, out var meta) ? meta.Cost : 0m;
+        }
+
+        string LineDepartment(LocalSaleLine line)
+        {
+            if (!string.IsNullOrWhiteSpace(line.Department))
+                return line.Department.Trim();
+            if (productMeta.TryGetValue(line.ProductId, out var meta) && !string.IsNullOrWhiteSpace(meta.Department))
+                return meta.Department.Trim();
+            return "General";
+        }
+
+        decimal SaleProfit(LocalSale sale) =>
+            sale.Lines.Sum(line => line.Total - LineCost(line) * line.Quantity);
+
+        var total = valid.Sum(x => x.Total);
+        var profit = valid.Sum(SaleProfit);
+        var previousTotal = previousSales.Sum(x => x.Total);
+        var previousProfit = previousSales.Sum(SaleProfit);
+        var previousTxn = previousSales.Count;
+        var avgMargin = total == 0 ? 0 : profit / total * 100m;
+        var previousAvgMargin = previousTotal == 0 ? 0 : previousProfit / previousTotal * 100m;
 
         var last30FromUtc = DateTime.Today.AddDays(-29).ToUniversalTime();
         var last30ToUtc = DateTime.Today.AddDays(1).ToUniversalTime();
@@ -48,21 +88,70 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
             .OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.TicketNumber)
             .ToArray();
 
+        var dayCount = Math.Max(1, (toLocal.Date - fromLocal.Date).Days);
+        var useWeekdayLabels = dayCount <= 7;
+        var daySeries = Enumerable.Range(0, dayCount).Select(offset =>
+        {
+            var date = fromLocal.Date.AddDays(offset);
+            var daySales = valid.Where(x => x.CreatedAtUtc.ToLocalTime().Date == date).ToArray();
+            var salesTotal = daySales.Sum(x => x.Total);
+            var dayProfit = daySales.Sum(SaleProfit);
+            var label = useWeekdayLabels
+                ? Spanish.DateTimeFormat.GetDayName(date.DayOfWeek)
+                : date.ToString("dd/MM", Spanish);
+            if (useWeekdayLabels && label.Length > 0)
+                label = char.ToUpper(label[0], Spanish) + label[1..];
+            return new ReportDayPoint(date, label, salesTotal, dayProfit);
+        }).ToArray();
+
+        var days = daySeries.Select(x => new ReportPoint(x.Date, x.Sales)).ToArray();
+
+        var deptGroups = lineItems
+            .GroupBy(LineDepartment)
+            .Select(g => new
+            {
+                Department = g.Key,
+                Revenue = g.Sum(x => x.Total),
+                Profit = g.Sum(x => x.Total - LineCost(x) * x.Quantity)
+            })
+            .OrderByDescending(x => x.Revenue)
+            .ToArray();
+        var topDepts = deptGroups.Take(4).ToArray();
+        var otherDepts = deptGroups.Skip(4).ToArray();
+        var departments = topDepts
+            .Select(x => new ReportDepartmentRow(
+                x.Department, x.Revenue, x.Profit,
+                total == 0 ? 0 : x.Revenue / total * 100m))
+            .Concat(otherDepts.Length == 0
+                ? []
+                : new[]
+                {
+                    new ReportDepartmentRow(
+                        "Otros...",
+                        otherDepts.Sum(x => x.Revenue),
+                        otherDepts.Sum(x => x.Profit),
+                        total == 0 ? 0 : otherDepts.Sum(x => x.Revenue) / total * 100m)
+                })
+            .ToArray();
+
+        var (taxable, taxCollected) = ComputeTax(total, ivaPercent, pricesIncludeTax);
+
         return new ReportDashboard(
-            valid.Sum(x => x.Total),
+            total,
             valid.Length,
             lineItems.Sum(x => x.Quantity),
-            valid.Length == 0 ? 0 : valid.Sum(x => x.Total) / valid.Length,
+            valid.Length == 0 ? 0 : total / valid.Length,
             previousTotal,
-            previousTotal == 0 ? (valid.Length == 0 ? 0 : 100) :
-                (valid.Sum(x => x.Total) - previousTotal) / previousTotal * 100,
-            Enumerable.Range(0, Math.Max(1, (toLocal.Date - fromLocal.Date).Days))
-                .Select(offset =>
-                {
-                    var date = fromLocal.Date.AddDays(offset);
-                    return new ReportPoint(date, valid.Where(x => x.CreatedAtUtc.ToLocalTime().Date == date)
-                        .Sum(x => x.Total));
-                }).ToArray(),
+            PercentChange(total, previousTotal),
+            profit,
+            previousProfit,
+            PercentChange(profit, previousProfit),
+            avgMargin,
+            previousAvgMargin,
+            PercentChange(avgMargin, previousAvgMargin),
+            PercentChange(valid.Length, previousTxn),
+            daySeries,
+            days,
             Enumerable.Range(0, 24).Select(hour => new ReportPoint(
                 new DateTime(2000, 1, 1, hour, 0, 0), valid
                     .Where(x => x.CreatedAtUtc.ToLocalTime().Hour == hour)
@@ -70,6 +159,7 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
             valid.GroupBy(x => string.IsNullOrWhiteSpace(x.PaymentMethod) ? "Sin especificar" : x.PaymentMethod)
                 .Select(group => new ReportPaymentRow(group.Key, group.Sum(x => x.Total), group.Count()))
                 .OrderByDescending(x => x.Total).ToArray(),
+            departments,
             products,
             valid30.Select(x => x.CreatedAtUtc.ToLocalTime().Date).Distinct().Count(),
             valid30.Sum(x => x.Total),
@@ -78,7 +168,140 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
             valid30.SelectMany(x => x.Lines).GroupBy(x => x.ProductName)
                 .OrderByDescending(group => group.Sum(x => x.Quantity))
                 .Select(group => group.Key).FirstOrDefault() ?? "Sin ventas",
-            personalConsumption);
+            personalConsumption,
+            ivaPercent,
+            taxCollected,
+            taxable);
+    }
+
+    private static decimal PercentChange(decimal current, decimal previous) =>
+        previous == 0 ? (current == 0 ? 0 : 100) : (current - previous) / previous * 100m;
+
+    private static (decimal Taxable, decimal Collected) ComputeTax(
+        decimal total, decimal ivaPercent, bool pricesIncludeTax)
+    {
+        if (total <= 0 || ivaPercent <= 0)
+            return (0, 0);
+        var rate = ivaPercent / 100m;
+        if (pricesIncludeTax)
+        {
+            var taxable = Math.Round(total / (1m + rate), 2, MidpointRounding.AwayFromZero);
+            return (taxable, Math.Round(total - taxable, 2, MidpointRounding.AwayFromZero));
+        }
+
+        var collected = Math.Round(total * rate, 2, MidpointRounding.AwayFromZero);
+        return (total, collected);
+    }
+
+    public async Task<CashCloseReport?> GetCashCloseReportAsync(
+        long sessionId, decimal? countedOverride = null,
+        decimal ivaPercent = 19m, bool pricesIncludeTax = true,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var session = await db.CashSessions.AsNoTracking()
+            .Include(x => x.Movements)
+            .SingleOrDefaultAsync(x => x.Id == sessionId, cancellationToken);
+        if (session is null)
+            return null;
+
+        var sales = await db.Sales.AsNoTracking()
+            .Where(x => x.CashSessionId == sessionId)
+            .ToListAsync(cancellationToken);
+        var closedAt = session.ClosedAtUtc ?? DateTime.UtcNow;
+        // Consumos antiguos sin CashSessionId: asociar por ventana del turno.
+        var orphanPersonal = await db.Sales.AsNoTracking()
+            .Where(x => x.PersonalConsumption && !x.Cancelled && x.CashSessionId == null &&
+                        x.CreatedAtUtc >= session.OpenedAtUtc && x.CreatedAtUtc <= closedAt)
+            .ToListAsync(cancellationToken);
+        if (orphanPersonal.Count > 0)
+            sales = sales.Concat(orphanPersonal).ToList();
+
+        var valid = sales.Where(x => !x.Cancelled && !x.PersonalConsumption).ToArray();
+        var personalSales = sales.Where(x => !x.Cancelled && x.PersonalConsumption).ToArray();
+        var personalConsumptionTotal = personalSales.Sum(x => x.Total);
+        var personalConsumptionCount = personalSales.Length;
+        var cancelledTotal = sales.Where(x => x.Cancelled).Sum(x => x.Total);
+
+        decimal cashFromSales = 0m;
+        decimal cardSales = 0m;
+        decimal transferSales = 0m;
+        decimal otherSales = 0m;
+        foreach (var sale in valid)
+        {
+            var method = sale.PaymentMethod?.Trim() ?? string.Empty;
+            if (method.Equals("Efectivo", StringComparison.OrdinalIgnoreCase))
+            {
+                cashFromSales += sale.Total;
+            }
+            else if (method.Equals("Mixto", StringComparison.OrdinalIgnoreCase))
+            {
+                var cashPart = Math.Clamp(sale.CashSessionAmount, 0, sale.Total);
+                cashFromSales += cashPart;
+                cardSales += Math.Max(0, sale.Total - cashPart);
+            }
+            else if (method.Equals("Tarjeta", StringComparison.OrdinalIgnoreCase))
+            {
+                cardSales += sale.Total;
+            }
+            else if (method.Equals("Transferencia", StringComparison.OrdinalIgnoreCase) ||
+                     method.Equals("Crédito", StringComparison.OrdinalIgnoreCase))
+            {
+                transferSales += sale.Total;
+            }
+            else
+            {
+                otherSales += sale.Total;
+            }
+        }
+
+        // Misma fórmula que CloseCashSession / CashBalance: fondo + efectivo ventas + ingresos - egresos.
+        // Consumo personal no ingresa dinero: no altera el efectivo esperado.
+        var entries = session.TotalEntries;
+        var exits = session.TotalExits;
+        var cashSalesLedger = cashFromSales;
+        var expectedCash = session.OpeningAmount + cashSalesLedger + entries - exits;
+        var counted = countedOverride ?? session.ClosingAmount ?? expectedCash;
+        var openedLocal = session.OpenedAtUtc.ToLocalTime();
+        var closedLocal = closedAt.ToLocalTime();
+        var duration = closedLocal - openedLocal;
+        if (duration < TimeSpan.Zero)
+            duration = TimeSpan.Zero;
+
+        var totalSales = valid.Sum(x => x.Total);
+        var txn = valid.Length;
+        var avgTicket = txn == 0 ? 0 : totalSales / txn;
+        var (taxable, taxCollected) = ComputeTax(totalSales, ivaPercent, pricesIncludeTax);
+        var folio = $"CC-{closedLocal:yyyyMMdd}-{session.Id:D4}";
+
+        return new CashCloseReport(
+            Folio: folio,
+            DateLocal: closedLocal.Date,
+            RegisterName: string.IsNullOrWhiteSpace(session.RegisterName) ? "Caja 1" : session.RegisterName,
+            CashierName: string.IsNullOrWhiteSpace(session.UserName) ? "Cajero" : session.UserName,
+            OpenedAtLocal: openedLocal,
+            ClosedAtLocal: closedLocal,
+            Duration: duration,
+            TotalSales: totalSales,
+            Transactions: txn,
+            AverageTicket: avgTicket,
+            CashPayments: cashFromSales,
+            CardPayments: cardSales,
+            TransferPayments: transferSales,
+            OtherPayments: otherSales,
+            TaxRate: ivaPercent,
+            TaxCollected: taxCollected,
+            TaxableSales: taxable,
+            OpeningAmount: session.OpeningAmount,
+            CashFromSales: cashSalesLedger,
+            CashExits: exits,
+            CashEntries: entries,
+            ExpectedCash: expectedCash,
+            CountedCash: counted,
+            Difference: counted - expectedCash,
+            CancelledSales: cancelledTotal,
+            PersonalConsumptionTotal: personalConsumptionTotal,
+            PersonalConsumptionCount: personalConsumptionCount);
     }
 
     public async Task<ReportSalesPage> GetSalesAsync(
@@ -93,7 +316,7 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
         if (!string.IsNullOrWhiteSpace(cashier) && cashier != "Todos")
             query = query.Where(x => x.UserName == cashier);
         if (creditOnly)
-            query = query.Where(x => x.PaymentMethod == "Crédito");
+            query = query.Where(x => x.PaymentMethod == "Transferencia" || x.PaymentMethod == "Crédito");
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
@@ -167,18 +390,19 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
             .Where(x => x.CashSessionId != null && ids.Contains(x.CashSessionId.Value) &&
                         x.CreatedAtUtc >= fromUtc && x.CreatedAtUtc < toUtc)
             .ToListAsync(cancellationToken);
-        var valid = sales.Where(x => !x.Cancelled && !x.PersonalConsumption &&
-                                     x.PaymentMethod == "Efectivo").ToArray();
+        var validSales = sales.Where(x => !x.Cancelled && !x.PersonalConsumption).ToArray();
+        var cashSales = validSales.Sum(LocalPosStore.ComputeSaleCashDrawerImpact);
         var cancelled = sales.Where(x => x.Cancelled).Sum(x => x.Total);
-        var entries = sessions.SelectMany(x => x.Movements)
-            .Where(x => x.Type is "INGRESO" or "ENTRADA").Sum(x => x.Amount);
-        var exits = sessions.SelectMany(x => x.Movements)
-            .Where(x => x.Type is "RETIRO" or "SALIDA").Sum(x => x.Amount);
+        // Totales de sesión (incluye DEVOLUCION en TotalExits); no mezclar solo RETIRO del movimiento.
+        var entries = sessions.Sum(x => x.TotalEntries);
+        var exits = sessions.Sum(x => x.TotalExits);
         var opening = sessions.Sum(x => x.OpeningAmount);
-        var expected = opening + valid.Sum(x => x.Total) + entries - exits;
+        // Esperado operativo del turno: fondo + ledger de efectivo de sesión + ingresos - egresos.
+        var sessionCashSales = sessions.Sum(x => x.TotalSales);
+        var expected = opening + sessionCashSales + entries - exits;
         var closed = sessions.Where(x => x.ClosingAmount.HasValue).Sum(x => x.ClosingAmount!.Value);
         return new ReportCashSummary(
-            sessions.Count, opening, valid.Sum(x => x.Total), entries, exits,
+            sessions.Count, opening, cashSales > 0 ? cashSales : sessionCashSales, entries, exits,
             cancelled, expected, closed, closed - expected,
             sessions.OrderByDescending(x => x.OpenedAtUtc)
                 .Select(x => new ReportCashSessionRow(x.Id, x.RegisterName, x.UserName,
@@ -406,11 +630,14 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
         if (sale.PersonalConsumption || sale.CashSessionId is null || refundAmount <= 0 || saleTotalBefore <= 0)
             return 0m;
 
-        var cashBase = sale.CashSessionAmount > 0
-            ? sale.CashSessionAmount
-            : sale.PaymentMethod.Equals("Efectivo", StringComparison.OrdinalIgnoreCase)
-                ? saleTotalBefore
-                : 0m;
+        var method = sale.PaymentMethod?.Trim() ?? string.Empty;
+        decimal cashBase;
+        if (method.Equals("Efectivo", StringComparison.OrdinalIgnoreCase))
+            cashBase = saleTotalBefore;
+        else if (method.Equals("Mixto", StringComparison.OrdinalIgnoreCase))
+            cashBase = Math.Clamp(sale.CashSessionAmount, 0m, saleTotalBefore);
+        else
+            cashBase = 0m;
         if (cashBase <= 0)
             return 0m;
 
@@ -425,7 +652,8 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
         if (sale.CashSessionAmount > 0)
             sale.CashSessionAmount = Math.Max(0, sale.CashSessionAmount - cashImpact);
 
-        if (sale.PaymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase))
+        if (sale.PaymentMethod.Equals("Transferencia", StringComparison.OrdinalIgnoreCase) ||
+            sale.PaymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase))
             return;
 
         sale.ReceivedAmount = Math.Max(0, sale.ReceivedAmount - cashImpact);
@@ -446,21 +674,55 @@ public sealed class LocalReportsService(IDbContextFactory<LocalPosDbContext> dbF
         });
     }
 
-    private static decimal GetSaleCashImpact(LocalSale sale)
-    {
-        if (sale.CashSessionAmount > 0)
-            return sale.CashSessionAmount;
-        return sale.PaymentMethod.Equals("Efectivo", StringComparison.OrdinalIgnoreCase) ? sale.Total : 0m;
-    }
+    private static decimal GetSaleCashImpact(LocalSale sale) =>
+        LocalPosStore.ComputeSaleCashDrawerImpact(sale);
 }
+
+public sealed record CashCloseReport(
+    string Folio,
+    DateTime DateLocal,
+    string RegisterName,
+    string CashierName,
+    DateTime OpenedAtLocal,
+    DateTime ClosedAtLocal,
+    TimeSpan Duration,
+    decimal TotalSales,
+    int Transactions,
+    decimal AverageTicket,
+    decimal CashPayments,
+    decimal CardPayments,
+    decimal TransferPayments,
+    decimal OtherPayments,
+    decimal TaxRate,
+    decimal TaxCollected,
+    decimal TaxableSales,
+    decimal OpeningAmount,
+    decimal CashFromSales,
+    decimal CashExits,
+    decimal CashEntries,
+    decimal ExpectedCash,
+    decimal CountedCash,
+    decimal Difference,
+    decimal CancelledSales,
+    decimal PersonalConsumptionTotal = 0,
+    int PersonalConsumptionCount = 0);
 
 public sealed record ReportDashboard(
     decimal Total, int Transactions, decimal Units, decimal AverageTicket,
-    decimal PreviousTotal, decimal Variation, IReadOnlyList<ReportPoint> Days,
+    decimal PreviousTotal, decimal Variation,
+    decimal Profit, decimal PreviousProfit, decimal ProfitVariation,
+    decimal AvgMargin, decimal PreviousAvgMargin, decimal MarginVariation,
+    decimal TxnVariation,
+    IReadOnlyList<ReportDayPoint> DaySeries,
+    IReadOnlyList<ReportPoint> Days,
     IReadOnlyList<ReportPoint> Hours, IReadOnlyList<ReportPaymentRow> Payments,
+    IReadOnlyList<ReportDepartmentRow> Departments,
     IReadOnlyList<ReportProductRow> TopProducts, int ActiveDays30, decimal Total30,
     int Transactions30, decimal Units30, string LeadingProduct,
-    IReadOnlyList<ReportPersonalConsumptionRow> PersonalConsumption);
+    IReadOnlyList<ReportPersonalConsumptionRow> PersonalConsumption,
+    decimal TaxRate, decimal TaxCollected, decimal TaxableSales);
+public sealed record ReportDayPoint(DateTime Date, string Label, decimal Sales, decimal Profit);
+public sealed record ReportDepartmentRow(string Department, decimal Revenue, decimal Profit, decimal SharePercent);
 public sealed record ReportPersonalConsumptionRow(
     string ProductName, string Code, decimal Quantity, decimal Total,
     string Cashier, long TicketNumber, DateTime CreatedAtUtc);

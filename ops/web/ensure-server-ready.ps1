@@ -105,16 +105,22 @@ if (-not $SkipBootstrap) {
     $webDll = Join-Path $AppRoot "web\GrunflexPOS.Web.dll"
     if (Test-Path $webExe) {
         Write-Step "Preparando base local del POS Web..."
-        & $webExe --bootstrap-first-run
-        if ($LASTEXITCODE -ne 0) {
-            throw "No se pudo preparar la base local del POS Web (codigo $LASTEXITCODE)."
+        # WinExe no siempre actualiza $LASTEXITCODE; hay que leer ExitCode del proceso.
+        $bootstrap = Start-Process -FilePath $webExe -ArgumentList "--bootstrap-first-run" `
+            -WorkingDirectory (Split-Path $webExe -Parent) -Wait -PassThru -WindowStyle Hidden
+        if ($null -eq $bootstrap -or $bootstrap.ExitCode -ne 0) {
+            $code = if ($null -eq $bootstrap) { "n/a" } else { $bootstrap.ExitCode }
+            throw "No se pudo preparar la base local del POS Web (codigo $code)."
         }
         Write-Step "Base local del POS Web lista."
     } elseif (Test-Path $webDll) {
         Write-Step "Preparando base local del POS Web (dotnet)..."
-        dotnet $webDll --bootstrap-first-run
-        if ($LASTEXITCODE -ne 0) {
-            throw "No se pudo preparar la base local del POS Web (codigo $LASTEXITCODE)."
+        $dotnet = Get-Command dotnet -ErrorAction Stop
+        $bootstrap = Start-Process -FilePath $dotnet.Source -ArgumentList @($webDll, "--bootstrap-first-run") `
+            -WorkingDirectory (Split-Path $webDll -Parent) -Wait -PassThru -WindowStyle Hidden
+        if ($null -eq $bootstrap -or $bootstrap.ExitCode -ne 0) {
+            $code = if ($null -eq $bootstrap) { "n/a" } else { $bootstrap.ExitCode }
+            throw "No se pudo preparar la base local del POS Web (codigo $code)."
         }
         Write-Step "Base local del POS Web lista."
     } else {

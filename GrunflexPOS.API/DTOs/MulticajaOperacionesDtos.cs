@@ -2,10 +2,41 @@ namespace GrunflexPOS.API.DTOs;
 
 public sealed class MulticajaVentaLineaDto
 {
+    /// <summary>Id del producto en la base central, cuando la caja ya lo conoce.</summary>
+    public int? ProductoId { get; set; }
+
     public string? CodigoBarras { get; set; }
     public string Producto { get; set; } = "";
     public int Cantidad { get; set; }
     public decimal Precio { get; set; }
+
+    /// <summary>Datos para crear el producto en la central si aún no existe.</summary>
+    public decimal? Costo { get; set; }
+    public int? Stock { get; set; }
+    public string? Departamento { get; set; }
+    public string? TipoVenta { get; set; }
+
+    /// <summary>
+    /// Componentes de una promoción. Si hay ítems, el inventario se descuenta por producto
+    /// y el stock de la promoción se alinea a kits disponibles.
+    /// </summary>
+    public List<MulticajaVentaComponenteDto>? Componentes { get; set; }
+}
+
+public sealed class MulticajaVentaComponenteDto
+{
+    public int? ProductoId { get; set; }
+    public string? CodigoBarras { get; set; }
+    public string? Producto { get; set; }
+    /// <summary>Unidades del producto por cada kit de promoción vendido.</summary>
+    public int CantidadPorKit { get; set; }
+}
+
+public sealed class MulticajaProductoUpsertResponse
+{
+    public bool Ok { get; set; }
+    public int Upserted { get; set; }
+    public string? Error { get; set; }
 }
 
 public sealed class MulticajaVentaCommitRequest
@@ -26,6 +57,9 @@ public sealed class MulticajaVentaCommitRequest
     public string Cliente { get; set; } = "Público en general";
     public string MetodoPago { get; set; } = "Efectivo";
     public bool EsConsumoPersonal { get; set; }
+
+    /// <summary>Porción en efectivo (Mixto). Ignorado si el método no es Mixto.</summary>
+    public decimal? MontoEfectivo { get; set; }
 
     public List<MulticajaVentaLineaDto> Items { get; set; } = new();
 }

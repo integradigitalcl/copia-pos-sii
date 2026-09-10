@@ -10,7 +10,8 @@ public sealed record PrintTextRequest(
     string Printer,
     string Text,
     string? LogoBase64 = null,
-    bool? LogoMonochrome = null);
+    bool? LogoMonochrome = null,
+    int? PaperWidthMm = null);
 
 public sealed record PrintTicketRequest(
     string Printer,

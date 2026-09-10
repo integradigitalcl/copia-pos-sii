@@ -1,6 +1,8 @@
 using GrunflexPOS.Web.Data;
 using GrunflexPOS.Web.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -83,8 +85,25 @@ public sealed class PosEmailServiceTests : IDisposable
         Assert.True(settings.Ssl);
     }
 
-    private PosEmailService CreateService() =>
-        new(_store, new BoletaPdfService(NullLogger<BoletaPdfService>.Instance), NullLogger<PosEmailService>.Instance);
+    private PosEmailService CreateService()
+    {
+        var webEnv = new TestWebHostEnvironment();
+        var logo = new PosLogoService(_store, webEnv);
+        return new PosEmailService(_store, new BoletaPdfService(logo, NullLogger<BoletaPdfService>.Instance),
+            NullLogger<PosEmailService>.Instance);
+    }
+
+    private sealed class TestWebHostEnvironment : IWebHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "tests";
+        public string ContentRootPath { get; set; } = ".";
+        public string WebRootPath { get; set; } = ".";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            new Microsoft.Extensions.FileProviders.NullFileProvider();
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider { get; set; } =
+            new Microsoft.Extensions.FileProviders.NullFileProvider();
+    }
 
     public void Dispose()
     {

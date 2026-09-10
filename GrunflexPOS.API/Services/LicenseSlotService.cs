@@ -12,14 +12,19 @@ public sealed class LicenseSlotService
         "Ha alcanzado el límite de cajas/terminales de su plan.\n\n" +
         "Para agregar otra caja debe ampliar su licencia Multicaja. Contacte a ventas@grunflex.cl o a su distribuidor GrünFlex.";
 
+    /// <summary>Cajas permitidas cuando no se exige licencia.</summary>
+    public const int UnlockedMaxBoxes = 99;
+
     private static readonly TimeSpan InactiveAfter = TimeSpan.FromDays(7);
     private readonly ApiDbContext _db;
     private readonly PosCommerceDbContext _pos;
+    private readonly bool _requireLicense;
 
-    public LicenseSlotService(ApiDbContext db, PosCommerceDbContext pos)
+    public LicenseSlotService(ApiDbContext db, PosCommerceDbContext pos, IConfiguration configuration)
     {
         _db = db;
         _pos = pos;
+        _requireLicense = configuration.GetValue("Licensing:RequireLicense", false);
     }
 
     public static string MensajeLimiteCajas(int maxBoxes) =>
@@ -43,6 +48,9 @@ public sealed class LicenseSlotService
 
     public async Task<int> GetMaxBoxesAsync(string? activationId, CancellationToken ct = default)
     {
+        if (!_requireLicense)
+            return UnlockedMaxBoxes;
+
         var lic = await GetActiveLicenseAsync(activationId, ct);
         return Math.Max(1, lic?.NumberOfBoxes ?? 1);
     }
@@ -87,6 +95,9 @@ public sealed class LicenseSlotService
 
     public async Task<bool> CanAddActiveCajaAsync(string? activationId, CancellationToken ct = default)
     {
+        if (!_requireLicense)
+            return true;
+
         var (used, max) = await GetUnifiedSlotUsageAsync(activationId, ct: ct);
         return used + 1 <= max;
     }
@@ -96,6 +107,9 @@ public sealed class LicenseSlotService
         string? activationId,
         CancellationToken ct = default)
     {
+        if (!_requireLicense)
+            return true;
+
         var (used, max) = await GetUnifiedSlotUsageAsync(activationId, excludeFingerprint: machineFingerprint, ct: ct);
         return used + 1 <= max;
     }

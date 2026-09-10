@@ -50,7 +50,8 @@ public sealed class HardwareBridgeClient(
                     printer,
                     text = ticket,
                     logoBase64 = logoBytes is { Length: > 0 } ? Convert.ToBase64String(logoBytes) : null,
-                    logoMonochrome
+                    logoMonochrome,
+                    paperWidthMm = template.PaperWidthMm
                 })
             };
             request.Headers.Authorization = new("Bearer", Token);
@@ -117,7 +118,8 @@ public sealed class HardwareBridgeClient(
                     printer,
                     text = ticket,
                     logoBase64 = logoBytes is { Length: > 0 } ? Convert.ToBase64String(logoBytes) : null,
-                    logoMonochrome
+                    logoMonochrome,
+                    paperWidthMm = template.PaperWidthMm
                 })
             };
             request.Headers.Authorization = new("Bearer", Token);
@@ -158,7 +160,8 @@ public sealed class HardwareBridgeClient(
                     printer,
                     text = ticketText,
                     logoBase64 = logoBytes is { Length: > 0 } ? Convert.ToBase64String(logoBytes) : null,
-                    logoMonochrome = logoMonochrome.Value
+                    logoMonochrome = logoMonochrome.Value,
+                    paperWidthMm = await ResolveTicketPaperWidthMmAsync(cancellationToken)
                 })
             };
             request.Headers.Authorization = new("Bearer", Token);
@@ -451,12 +454,7 @@ public sealed class HardwareBridgeClient(
         string printer, string ticket, byte[]? logoBytes, CancellationToken cancellationToken,
         bool isTest = false, bool logoMonochrome = true)
     {
-        var paperWidth = 80;
-        var widthSetting = await settings.GetSettingAsync("ticket_ancho_mm", string.Empty, cancellationToken);
-        if (string.IsNullOrWhiteSpace(widthSetting))
-            widthSetting = await settings.GetSettingAsync("ticket_ancho", "80", cancellationToken);
-        if (int.TryParse(widthSetting, out var parsed) && parsed is 58 or 80)
-            paperWidth = parsed;
+        var paperWidth = await ResolveTicketPaperWidthMmAsync(cancellationToken);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "api/print/ticket")
         {
@@ -474,6 +472,14 @@ public sealed class HardwareBridgeClient(
         if (response.IsSuccessStatusCode)
             return HardwareResult.Ok(isTest ? "Prueba enviada a la impresora" : "Ticket enviado a la impresora");
         return HardwareResult.Unavailable(await ReadPrinterErrorAsync(response, cancellationToken));
+    }
+
+    private async Task<int> ResolveTicketPaperWidthMmAsync(CancellationToken cancellationToken)
+    {
+        var widthSetting = await settings.GetSettingAsync("ticket_ancho_mm", string.Empty, cancellationToken);
+        if (string.IsNullOrWhiteSpace(widthSetting))
+            widthSetting = await settings.GetSettingAsync("ticket_ancho", "80", cancellationToken);
+        return int.TryParse(widthSetting, out var parsed) && parsed is 58 or 80 ? parsed : 80;
     }
 
     public async Task<ScaleReadResult> ReadScaleAsync(

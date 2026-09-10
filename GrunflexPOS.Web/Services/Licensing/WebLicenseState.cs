@@ -58,7 +58,23 @@ public sealed class WebLicenseState(
         CloudBackup = IsValid && await GetBoolAsync("licencia_cloud_backup", cancellationToken);
         PrioritySupport = IsValid && await GetBoolAsync("licencia_priority_support", cancellationToken);
 
-        BlockReason = ResolveBlockReason(status);
+        if (!RequireLicense)
+        {
+            // Sin exigencia de licencia todas las funciones quedan disponibles.
+            IsValid = true;
+            IsExpired = false;
+            Multicaja = true;
+            OnlineSupport = true;
+            CloudBackup = true;
+            PrioritySupport = true;
+            if (NumberOfBoxes <= 0)
+                NumberOfBoxes = 99;
+            StatusText = "Todo liberado";
+            BlockReason = null;
+        }
+        else
+            BlockReason = ResolveBlockReason(status);
+
         Changed?.Invoke();
     }
 

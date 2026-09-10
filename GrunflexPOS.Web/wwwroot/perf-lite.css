@@ -1,0 +1,40 @@
+/* Keep the same colors and layout, drop GPU-heavy glass/blur/motion. */
+html,body{
+    background:#edf3fb!important;
+    background-image:none!important;
+    background-attachment:scroll!important;
+}
+.login-card,
+.topbar,
+.catalog-card,.ticket-card,.data-card,.closing-card,.settings-card,.module-overview,
+.stat-card,.integration-card,.header-button,.outline-button,.date-chip,
+.checkout-modal-backdrop,.sidebar{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+}
+.login-card{background:#fff!important}
+.topbar{background:#fff!important}
+.catalog-card,.ticket-card,.data-card,.closing-card,.settings-card,.module-overview{
+    background:#fff!important;
+}
+.catalog-card:before,.ticket-card:before,.data-card:before,.closing-card:before,
+.settings-card:before,.module-overview:before,.login-card:before{display:none!important}
+.sidebar{background:#101828!important}
+.stat-card,.integration-card,.search-row,.header-button,.outline-button,.date-chip{
+    background:#fff!important;
+}
+.checkout-modal-backdrop{background:rgba(15,23,42,.45)!important}
+.nav-item.nav-card,.product-card,.category-chip,.settings-card,
+.login-button,.primary-button,.close-register,.payment-button,.header-button,.outline-button{
+    transition:none!important;
+    transform:none!important;
+    filter:none!important;
+}
+.nav-item.nav-card:hover,.product-card:hover,.category-chip:hover,.settings-card:hover,
+.login-button:hover,.primary-button:hover,.close-register:hover,.payment-button:hover,
+.header-button:hover,.outline-button:hover{
+    transform:none!important;
+    filter:none!important;
+}
+.table-wrap table{background:#fff}
+.products-table tbody tr.selected{outline:2px solid #2563eb;outline-offset:-2px}

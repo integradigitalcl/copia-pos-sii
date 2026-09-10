@@ -8,7 +8,8 @@ namespace GrunflexPOS.Web.Services;
 public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient hardware,
     BoletaPdfService boletaPdf, MulticajaClient multicaja,
     WebLicenseState licenseState, LicensingCloudClient licensingCloud, PosEmailService emailService,
-    InvoiceEmissionService invoiceEmission, ILogger<PosSessionState> logger) : IDisposable
+    InvoiceEmissionService invoiceEmission, LocalReportsService reports,
+    ILogger<PosSessionState> logger) : IDisposable
 {
     private readonly List<CartLine> _cart = [];
     private Func<Func<Task>, Task>? _uiDispatcher;
@@ -17,6 +18,9 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
     private long _lastTicketNumber;
     private decimal _lastTicketTotal;
     private CancellationTokenSource? _saleMessageCancellation;
+    private CancellationTokenSource? _errorMessageCancellation;
+    private CancellationTokenSource? _shiftNoticeCancellation;
+    private int _saleMessageDismissSeconds = 5;
     private CancellationTokenSource? _scannerCts;
     private Timer? _shiftCutoffTimer;
     private Timer? _licenseMonitorTimer;
@@ -44,6 +48,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
     public string CashRegister { get; private set; } = "Caja 1";
     public bool UseInventory { get; private set; } = true;
     public bool OfferCredit { get; private set; } = true;
+    public bool ShowHeaderCashBalance { get; private set; } = true;
     public bool AllowCommonProduct { get; private set; } = true;
     public bool EnforceCashMinimum { get; private set; } = true;
     public bool DrawerEnabled { get; private set; }
@@ -95,6 +100,10 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 ? multicaja.PendingOfflineCount > 0 ? "is-warning" : "is-online"
                 : "is-offline";
     public bool IsCheckoutOpen { get; private set; }
+
+    /// <summary>Hay un cobro en curso: la UI debe bloquear los controles del modal.</summary>
+    public bool IsCheckoutBusy => Interlocked.CompareExchange(ref _saleInProgress, 0, 0) > 0;
+
     public string SelectedPaymentMethod { get; private set; } = "Efectivo";
     public string ReceivedAmountText { get; private set; } = string.Empty;
     public string MixedCashText { get; private set; } = string.Empty;
@@ -138,8 +147,54 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         }
     }
 
-    public decimal GetEffectiveStock(PosProduct product) =>
-        _stockByProductId.TryGetValue(product.Id, out var stock) ? stock : product.Stock;
+    public decimal GetEffectiveStock(PosProduct product)
+    {
+        var components = PromotionCatalog.Parse(product.PromotionComponentsJson);
+        if (components.Count > 0)
+        {
+            return PromotionCatalog.AvailableKits(components, id =>
+            {
+                if (_stockByProductId.TryGetValue(id, out var live))
+                    return live;
+                var child = Products.FirstOrDefault(p => p.Id == id);
+                return child?.Stock ?? 0m;
+            });
+        }
+
+        return _stockByProductId.TryGetValue(product.Id, out var stock) ? stock : product.Stock;
+    }
+
+    /// <summary>Stock restante visible en el grid: inventario menos lo ya cargado en el carrito.</summary>
+    public decimal GetDisplayedCartStock(CartLine line)
+    {
+        var available = GetEffectiveStock(line.Product);
+        if (line.Product.Id <= 0)
+            return available;
+        var reserved = _cart.Where(x => x.Product.Id == line.Product.Id).Sum(x => x.Quantity);
+        return Math.Max(0m, available - reserved);
+    }
+
+    public IReadOnlyList<PromotionCartDetail> GetPromotionCartDetails(CartLine line)
+    {
+        var components = PromotionCatalog.Parse(line.Product.PromotionComponentsJson);
+        if (components.Count == 0)
+            return Array.Empty<PromotionCartDetail>();
+
+        var details = new List<PromotionCartDetail>(components.Count);
+        foreach (var component in components)
+        {
+            var child = Products.FirstOrDefault(p => p.Id == component.ProductId);
+            if (child is null)
+                continue;
+            details.Add(new PromotionCartDetail(
+                child.Code,
+                child.Name,
+                component.Quantity,
+                child.Price,
+                GetEffectiveStock(child)));
+        }
+        return details;
+    }
 
     private PosProduct WithLiveStock(PosProduct product)
     {
@@ -167,7 +222,8 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         {
             logger.LogError(ex, "Error al inicializar el POS Web");
             StartupError =
-                "No se pudo iniciar el POS. Revise C:\\ProgramData\\GrunflexPOS\\logs\\ " +
+                $"No se pudo iniciar el POS: {ex.GetBaseException().Message}. " +
+                "Revise C:\\ProgramData\\GrunflexPOS\\logs\\ " +
                 "o reinicie desde el acceso directo de Grunflex POS Web.";
         }
         finally
@@ -245,7 +301,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                     NotifyChanged();
                     return false;
                 }
-                CentralSessionId = attach.SessionId;
+                ApplyCentralSession(attach);
             }
             if (CashStatus == "Cerrada")
                 BeginOpeningCash();
@@ -274,6 +330,17 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         (error.Contains("no disponible", StringComparison.OrdinalIgnoreCase) ||
          error.Contains("no está registrada", StringComparison.OrdinalIgnoreCase) ||
          error.Contains("no se pudo registrar", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Ventas a crédito (historial) o transferencia diferida (OfferCredit).</summary>
+    private static bool IsDeferredPaymentMethod(string paymentMethod) =>
+        paymentMethod.Equals("Transferencia", StringComparison.OrdinalIgnoreCase) ||
+        paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsLegacyCreditMethod(string paymentMethod) =>
+        paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTransferPaymentMethod(string paymentMethod) =>
+        paymentMethod.Equals("Transferencia", StringComparison.OrdinalIgnoreCase);
 
     private async Task<bool> IsMulticajaClientAsync() =>
         string.Equals(
@@ -304,8 +371,20 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
             return false;
         }
 
-        CentralSessionId = attach.SessionId;
+        ApplyCentralSession(attach);
         return true;
+    }
+
+    private static bool IsMissingCentralProduct(string? error) =>
+        !string.IsNullOrWhiteSpace(error) &&
+        error.Contains("Producto no encontrado", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Guarda la sesión central y el id de caja que la central confirmó (puede haber cambiado).</summary>
+    private void ApplyCentralSession(MulticajaSessionResult attach)
+    {
+        CentralSessionId = attach.SessionId;
+        if (attach.CajaId is { } cajaId && cajaId != Guid.Empty)
+            CentralCajaId = cajaId;
     }
 
     private async Task<bool> CompleteLocalLoginAsync(LocalUserInfo user)
@@ -369,6 +448,8 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
             StringComparison.OrdinalIgnoreCase);
         AllowCommonProduct = string.Equals(await store.GetSettingAsync("opt_venta_producto_comun", "true"), "true",
             StringComparison.OrdinalIgnoreCase);
+        ShowHeaderCashBalance = string.Equals(await store.GetSettingAsync("opt_mostrar_saldo_header", "true"), "true",
+            StringComparison.OrdinalIgnoreCase);
         EnforceCashMinimum = string.Equals(await store.GetSettingAsync("pago_efectivo_no_menor", "true"), "true",
             StringComparison.OrdinalIgnoreCase);
         await store.EnsureDrawerLinkedToPrinterAsync();
@@ -390,11 +471,9 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
 
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {
-        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < (RequiresPasswordChange ? 8 : 4))
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 4)
         {
-            ShowError(RequiresPasswordChange
-                ? "La nueva contraseña debe tener al menos 8 caracteres."
-                : "La nueva contraseña debe tener al menos 4 caracteres.");
+            ShowError("La nueva contraseña debe tener al menos 4 caracteres.");
             return false;
         }
 
@@ -409,8 +488,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
             }
             WebAuthPolicy.ClearInitialCredentialsFiles();
             RequiresPasswordChange = false;
-            LastSaleMessage = "Contraseña actualizada correctamente.";
-            NotifyChanged();
+            ShowTransientMessage("Contraseña actualizada correctamente.");
             return true;
         }
 
@@ -432,8 +510,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         }
         RequiresPasswordChange = false;
         WebAuthPolicy.ClearInitialCredentialsFiles();
-        LastSaleMessage = "Contraseña actualizada correctamente.";
-        NotifyChanged();
+        ShowTransientMessage("Contraseña actualizada correctamente.");
         return true;
     }
 
@@ -453,11 +530,18 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
     public bool IsCurrentCashSessionSale(long? cashSessionId) =>
         OpenCashSessionId is long openId && cashSessionId == openId;
 
-    public async Task RefreshAsync()
+    public async Task RefreshAsync(bool force = false)
     {
-        if (ShouldDeferCatalogUi())
+        // Diferir solo en refrescos automáticos; el botón Actualizar debe forzar.
+        if (!force && ShouldDeferCatalogUi())
         {
             Interlocked.Exchange(ref _catalogUiDeferred, 1);
+            return;
+        }
+
+        if (force && Interlocked.CompareExchange(ref _saleInProgress, 0, 0) > 0)
+        {
+            ShowError("Espera a que termine el cobro para actualizar.");
             return;
         }
 
@@ -469,20 +553,20 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 await multicaja.SyncCatalogAsync();
         }
         var fresh = await store.GetProductsAsync();
+        // Siempre alinear catálogo con activos (incluye bajas). El carrito se actualiza aparte.
+        Products = fresh;
+        UpdateStockMirror(Products);
         if (_cart.Count > 0)
-            ApplyStockSnapshot(fresh, replaceCatalog: false, notifyUi: false);
-        else
-        {
-            Products = fresh;
-            UpdateStockMirror(Products);
-        }
+            RefreshCartProductSnapshots(fresh);
         Dashboard = await store.GetDashboardAsync();
         RecentSales = await store.GetRecentSalesAsync();
-        var session = await store.GetOpenCashSessionAsync();
+        var session = await store.ReconcileAndGetOpenCashSessionAsync();
         if (session is not null && IsShiftCutoffReached(session, DateTime.Now))
         {
             var expectedAmount = session.OpeningAmount + session.TotalSales +
                                  session.TotalEntries - session.TotalExits;
+            var sessionId = session.Id;
+            var closed = false;
             if (MulticajaEnabled && CentralUserId is not null && CentralCajaId is not null &&
                 CentralSessionId is not null)
             {
@@ -491,19 +575,23 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 if (!central.Success)
                 {
                     ShiftScheduleNotice = $"No se pudo ejecutar el corte automático: {central.Message}";
+                    ScheduleShiftNoticeDismissal();
                 }
                 else
                 {
-                    await store.CloseCashSessionAsync(expectedAmount);
+                    closed = await store.CloseCashSessionAsync(expectedAmount);
                     CentralSessionId = null;
                     session = null;
                 }
             }
             else
             {
-                await store.CloseCashSessionAsync(expectedAmount);
+                closed = await store.CloseCashSessionAsync(expectedAmount);
                 session = null;
             }
+
+            if (closed)
+                await PrintCashCloseReceiptAsync(sessionId, expectedAmount);
         }
         CashStatus = session is null ? "Cerrada" : "Abierta";
         OpenCashSessionId = session?.Id;
@@ -514,11 +602,73 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         NotifyChanged();
     }
 
+    /// <summary>
+    /// Recarga interna pedida por el usuario (sin cerrar sesión ni recargar el navegador).
+    /// </summary>
+    public async Task UserRefreshAsync()
+    {
+        await RefreshAsync(force: true);
+        if (ErrorMessage is not null)
+            return;
+
+        await ReloadSettingsAsync();
+        ShowTransientMessage("POS actualizado.");
+    }
+
+    /// <summary>
+    /// Recarga el catálogo activo local sin sync multicaja (evita reactivar bajas).
+    /// </summary>
+    public async Task ReloadProductsAfterMutationAsync()
+    {
+        var fresh = await store.GetProductsAsync();
+        Products = fresh;
+        UpdateStockMirror(Products);
+        if (_cart.Count > 0)
+            RefreshCartProductSnapshots(fresh);
+        Dashboard = await store.GetDashboardAsync();
+        NotifyChanged();
+    }
+
+    /// <summary>
+    /// Quita un producto ya dado de baja del catálogo en memoria (sin releer SQLite/dashboard).
+    /// Evita congelar la UI al eliminar varios productos seguidos.
+    /// </summary>
+    public void RemoveDeactivatedProductLocally(int productId)
+    {
+        PosProduct? removed = null;
+        var kept = new List<PosProduct>(Math.Max(0, Products.Count - 1));
+        foreach (var product in Products)
+        {
+            if (product.Id == productId)
+            {
+                removed = product;
+                continue;
+            }
+
+            kept.Add(product);
+        }
+
+        if (removed is null)
+            return;
+
+        Products = kept;
+        _stockByProductId.Remove(productId);
+        if (_cart.Count > 0)
+            RefreshCartProductSnapshots(Products);
+        Dashboard = Dashboard with
+        {
+            ActiveProducts = Math.Max(0, Dashboard.ActiveProducts - 1),
+            UnitsInStock = Math.Max(0, Dashboard.UnitsInStock - removed.Stock)
+        };
+        NotifyChanged();
+    }
+
     public async Task SaveShiftScheduleAsync(string startTime, string endTime)
     {
         if (!TryParseShiftTime(startTime, out var start) || !TryParseShiftTime(endTime, out var end))
         {
             ShiftScheduleNotice = "Selecciona una hora de inicio y una hora de cierre válidas.";
+            ScheduleShiftNoticeDismissal();
             NotifyChanged();
             return;
         }
@@ -528,6 +678,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         await store.SetSettingAsync("corte_hora_inicio", ShiftStartTimeText);
         await store.SetSettingAsync("corte_hora_cierre", ShiftEndTimeText);
         ShiftScheduleNotice = $"Horario guardado: {ShiftStartTimeText} a {ShiftEndTimeText}.";
+        ScheduleShiftNoticeDismissal();
         await RefreshAsync();
     }
 
@@ -546,6 +697,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
 
     public void ClearError()
     {
+        CancelErrorMessageDismissal();
         ErrorMessage = null;
         NotifyChanged();
     }
@@ -553,6 +705,17 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
     public void ShowError(string message)
     {
         ErrorMessage = message;
+        if (IsAuthenticated)
+            ScheduleErrorMessageDismissal();
+        NotifyChanged();
+    }
+
+    /// <summary>Aviso verde temporal (3s). La venta usa 5s vía ScheduleSaleMessageDismissal.</summary>
+    public void ShowTransientMessage(string message)
+    {
+        CancelSaleMessageDismissal();
+        LastSaleMessage = message;
+        ScheduleSaleMessageDismissal(seconds: 3);
         NotifyChanged();
     }
 
@@ -612,7 +775,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         if (TryAddScaleLabel(code))
             return true;
 
-        var product = Products.FirstOrDefault(x => x.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+        var product = FindProductByBarcode(code);
         if (product is null)
         {
             ShowError($"Código no encontrado: {code}");
@@ -621,6 +784,28 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
 
         AddProduct(WithLiveStock(product));
         return true;
+    }
+
+    /// <summary>Busca por código exacto o ignorando ceros a la izquierda (pistola vs catálogo).</summary>
+    public PosProduct? FindProductByBarcode(string code)
+    {
+        code = (code ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(code))
+            return null;
+
+        var exact = Products.FirstOrDefault(x => x.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+        if (exact is not null)
+            return exact;
+
+        var normalized = NormalizeBarcodeLeadingZeros(code);
+        return Products.FirstOrDefault(x =>
+            NormalizeBarcodeLeadingZeros(x.Code).Equals(normalized, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeBarcodeLeadingZeros(string code)
+    {
+        var trimmed = code.Trim().TrimStart('0');
+        return trimmed.Length == 0 ? "0" : trimmed;
     }
 
     private bool TryAddScaleLabel(string code)
@@ -635,7 +820,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         PosProduct? product = null;
         foreach (var candidate in ScaleLabelBarcodeParser.LookupCandidates(parsed, _scalePrefix))
         {
-            product = Products.FirstOrDefault(x => x.Code.Equals(candidate, StringComparison.OrdinalIgnoreCase))
+            product = FindProductByBarcode(candidate)
                 ?? Products.FirstOrDefault(x => x.Code.EndsWith(candidate, StringComparison.OrdinalIgnoreCase));
             if (product is not null)
                 break;
@@ -648,10 +833,9 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         }
 
         AddProduct(WithLiveStock(product), parsed.QuantityKg ?? 1m, parsed.EmbeddedUnitPrice);
-        LastSaleMessage = parsed.Mode == "peso"
+        ShowTransientMessage(parsed.Mode == "peso"
             ? $"{product.Name}: {parsed.QuantityKg:0.###} kg"
-            : $"{product.Name}: precio etiqueta {FormatCurrency(parsed.EmbeddedUnitPrice ?? 0)}";
-        NotifyChanged();
+            : $"{product.Name}: precio etiqueta {FormatCurrency(parsed.EmbeddedUnitPrice ?? 0)}");
         return true;
     }
 
@@ -691,8 +875,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
 
         _selectedLine.Quantity = Math.Round(read.Kilograms, 3, MidpointRounding.AwayFromZero);
         ScaleStatus = read.Message;
-        LastSaleMessage = $"{_selectedLine.Product.Name}: {_selectedLine.Quantity:0.###} kg";
-        NotifyChanged();
+        ShowTransientMessage($"{_selectedLine.Product.Name}: {_selectedLine.Quantity:0.###} kg");
         return HardwareResult.Ok(read.Message);
     }
 
@@ -919,6 +1102,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         foreach (var line in _cart.Where(line => line.Product.Id > 0))
             line.UpdateUnitPrice(GetEffectivePrice(line.Product));
         LastSaleMessage = WholesaleMode ? "Modo mayoreo activado." : "Modo mayoreo desactivado.";
+        ScheduleSaleMessageDismissal(seconds: 3);
         NotifyChanged();
     }
 
@@ -1001,6 +1185,10 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
 
     public void CloseCheckout()
     {
+        // No se cierra el modal mientras el cobro está en curso.
+        if (IsCheckoutBusy)
+            return;
+
         IsCheckoutOpen = false;
         NotifyChanged();
     }
@@ -1082,14 +1270,19 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
     private async Task<bool> CompleteSaleCoreAsync(string? paymentMethod = null, bool? printTicket = null,
         bool personalConsumption = false)
     {
-        Interlocked.Increment(ref _saleInProgress);
+        // Sólo un cobro a la vez: evita duplicar la venta con doble Enter o doble clic.
+        if (Interlocked.CompareExchange(ref _saleInProgress, 1, 0) != 0)
+            return false;
+
+        NotifyChanged();
         try
         {
             return await CompleteSaleCoreInnerAsync(paymentMethod, printTicket, personalConsumption);
         }
         finally
         {
-            Interlocked.Decrement(ref _saleInProgress);
+            Interlocked.Exchange(ref _saleInProgress, 0);
+            NotifyChanged();
             _ = FlushDeferredCatalogUiAsync();
         }
     }
@@ -1098,9 +1291,9 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         bool personalConsumption = false)
     {
         paymentMethod ??= SelectedPaymentMethod;
-        if (paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase) && !OfferCredit)
+        if (IsLegacyCreditMethod(paymentMethod) && !OfferCredit)
         {
-            ShowError("El crédito no está habilitado en configuración.");
+            ShowError("La transferencia no está habilitada en configuración.");
             return false;
         }
 
@@ -1123,14 +1316,21 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 // Tarjeta/mixto: solo registro contable en reportes (sin pasarela).
             }
         }
-        else if (!personalConsumption && paymentMethod.Equals("Crédito", StringComparison.OrdinalIgnoreCase))
+        else if (!personalConsumption && OfferCredit && IsDeferredPaymentMethod(paymentMethod))
         {
             received = 0;
             cashPortion = 0;
         }
+        else if (!personalConsumption && IsTransferPaymentMethod(paymentMethod) && !OfferCredit)
+        {
+            // Transferencia bancaria (sin crédito): registra el total, sin impacto en efectivo.
+            received = received > 0 ? received : Total;
+            cashPortion = 0;
+        }
         else if (!personalConsumption && paymentMethod == "Efectivo")
         {
-            cashPortion = received;
+            // Neto que queda en caja: el vuelto no forma parte de la cuadratura.
+            cashPortion = Total;
         }
 
         if (!personalConsumption && EnforceCashMinimum && paymentMethod == "Efectivo" && received < Total)
@@ -1168,14 +1368,22 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
             var centralResult = await multicaja.CommitSaleAsync(
                 CentralCajaId.Value, CentralSessionId.Value, CentralUserId.Value,
                 _cart.Select(x => new CartItem(x.Product, x.Quantity, x.DiscountPercentage, x.UnitPrice)).ToArray(),
-                paymentMethod, personalConsumption);
+                paymentMethod, personalConsumption, cashPortion);
             if (!centralResult.Success)
             {
-                ErrorMessage = centralResult.Message;
-                NotifyChanged();
-                return false;
+                // Si la central no tiene el producto, la venta local sigue: no se bloquea el mesón.
+                if (!IsMissingCentralProduct(centralResult.Message))
+                {
+                    ErrorMessage = centralResult.Message;
+                    NotifyChanged();
+                    return false;
+                }
+
+                logger.LogWarning(
+                    "Venta local: la API central no tiene el producto ({Error}). No se encola.",
+                    centralResult.Message);
             }
-            if (!centralResult.Queued && long.TryParse(centralResult.Message, out var parsedTicket))
+            else if (!centralResult.Queued && long.TryParse(centralResult.Message, out var parsedTicket))
                 centralTicket = parsedTicket;
         }
         var session = await store.GetOpenCashSessionAsync();
@@ -1287,11 +1495,13 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         }
         _cart.Clear();
         _selectedLine = null;
-        if (MulticajaConfigured && MulticajaConnected)
-            await multicaja.SyncCatalogAsync();
+        // El monitor de catálogo ya sincroniza en segundo plano; hacerlo acá retrasaba el cierre del cobro.
         await RefreshAfterSaleAsync();
+        // No reaplicar un snapshot diferido de antes del cobro (p. ej. consumo personal):
+        // dejaría el stock viejo encima del descuento ya persistido.
+        _pendingCatalogProducts = null;
         await FlushDeferredCatalogUiAsync();
-        ScheduleSaleMessageDismissal();
+        ScheduleSaleMessageDismissal(seconds: 5);
         NotifyChanged();
         return true;
     }
@@ -1301,9 +1511,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         if (_cart.Count == 0)
             return;
 
-        if (MulticajaConfigured && MulticajaConnected)
-            await multicaja.SyncCatalogAsync();
-
+        // Sin llamada a la central: sincronizar acá agregaba latencia justo antes de cobrar.
         var fresh = await store.GetProductsAsync();
         ApplyStockSnapshot(fresh, replaceCatalog: false, notifyUi: false);
     }
@@ -1314,7 +1522,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         ApplyStockSnapshot(fresh, replaceCatalog: true, notifyUi: false);
         Dashboard = await store.GetDashboardAsync();
         RecentSales = await store.GetRecentSalesAsync();
-        var session = await store.GetOpenCashSessionAsync();
+        var session = await store.ReconcileAndGetOpenCashSessionAsync();
         CashStatus = session is null ? "Cerrada" : "Abierta";
         OpenCashSessionId = session?.Id;
         CashBalance = session is null
@@ -1334,8 +1542,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         if (string.IsNullOrWhiteSpace(printer))
         {
             var boletaPath = boletaPdf.Generate(_lastTicketNumber, _lastTicketItems, _lastTicketTotal);
-            LastSaleMessage = $"Sin impresora configurada. PDF guardado en {boletaPath}";
-            NotifyChanged();
+            ShowTransientMessage($"Sin impresora configurada. PDF guardado en {boletaPath}");
             return;
         }
 
@@ -1348,10 +1555,8 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         }
         else
         {
-            LastSaleMessage = $"Ticket #{_lastTicketNumber} reenviado a la impresora.";
+            ShowTransientMessage($"Ticket #{_lastTicketNumber} reenviado a la impresora.");
         }
-
-        NotifyChanged();
     }
 
     public bool TryGetLastTicket(out long ticketNumber, out IReadOnlyList<CartItem> items, out decimal total)
@@ -1385,7 +1590,10 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         ClosingAmountText = CashBalance.ToString("0.##", CultureInfo.InvariantCulture);
         IsClosingCashDialogOpen = true;
         if (!string.IsNullOrWhiteSpace(CorteMessage))
+        {
             ShiftScheduleNotice = CorteMessage;
+            ScheduleShiftNoticeDismissal();
+        }
         NotifyChanged();
     }
 
@@ -1409,6 +1617,14 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
             ShowError("El monto contado debe ser válido.");
             return false;
         }
+
+        var openSession = await store.GetOpenCashSessionAsync();
+        if (openSession is null)
+        {
+            ShowError("No hay una caja abierta para cerrar.");
+            return false;
+        }
+
         if (MulticajaEnabled && CentralUserId is not null && CentralCajaId is not null && CentralSessionId is not null)
         {
             var central = await multicaja.CloseCashSessionAsync(
@@ -1418,17 +1634,66 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 ShowError(central.Message);
                 return false;
             }
-            LastSaleMessage = central.Message;
+            ShowTransientMessage(central.Message);
         }
-        if (await store.CloseCashSessionAsync(counted))
+        if (!await store.CloseCashSessionAsync(counted))
         {
-            IsClosingCashDialogOpen = false;
-            CentralSessionId = null;
-            await RefreshAsync();
-            return true;
+            ShowError("No hay una caja abierta para cerrar.");
+            return false;
         }
-        ShowError("No hay una caja abierta para cerrar.");
-        return false;
+
+        IsClosingCashDialogOpen = false;
+        CentralSessionId = null;
+        await PrintCashCloseReceiptAsync(openSession.Id, counted);
+        await RefreshAsync();
+        return true;
+    }
+
+    private async Task PrintCashCloseReceiptAsync(long sessionId, decimal countedAmount)
+    {
+        try
+        {
+            var ivaText = await store.GetSettingAsync("facturacion_iva_porcentaje", "19");
+            var iva = decimal.TryParse(ivaText.Replace(',', '.'), NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var pct) ? pct : 19m;
+            var pricesIncludeTax = string.Equals(
+                await store.GetSettingAsync("facturacion_precios_con_iva", "true"),
+                "true", StringComparison.OrdinalIgnoreCase);
+            var paperText = await store.GetSettingAsync("ticket_ancho", "80");
+            if (string.IsNullOrWhiteSpace(paperText))
+                paperText = await store.GetSettingAsync("ticket_ancho_mm", "80");
+            var paperWidth = int.TryParse(paperText, out var mm) && mm is 58 or 80 ? mm : 80;
+            var defaultCols = TicketTemplateService.RecommendedColumns(paperWidth);
+            var columnsText = await store.GetSettingAsync("ticket_columnas", defaultCols.ToString(CultureInfo.InvariantCulture));
+            var maxCols = paperWidth <= 58 ? 32 : 48;
+            var columns = int.TryParse(columnsText, out var cols)
+                ? Math.Clamp(cols, 20, maxCols)
+                : defaultCols;
+            if (paperWidth <= 58)
+                columns = Math.Min(columns, 32);
+
+            var report = await reports.GetCashCloseReportAsync(sessionId, countedAmount, iva, pricesIncludeTax);
+            if (report is null)
+                return;
+
+            var ticket = CashCloseTicketFormatter.Format(report, columns, paperWidth);
+            var printer = await hardware.GetConfiguredPrinterNameAsync();
+            if (string.IsNullOrWhiteSpace(printer))
+            {
+                ShowTransientMessage("Caja cerrada. Configure una impresora para imprimir el cierre.");
+                return;
+            }
+
+            var printResult = await hardware.TestPrinterAsync(printer, ticket);
+            ShowTransientMessage(printResult.Success
+                ? "Caja cerrada. Comprobante de cierre enviado a la impresora."
+                : $"Caja cerrada. No se pudo imprimir el cierre: {printResult.Message}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "No se pudo imprimir el comprobante de cierre de caja");
+            ShowTransientMessage("Caja cerrada. El comprobante de cierre no se pudo imprimir.");
+        }
     }
 
     private decimal GetEffectivePrice(PosProduct product) =>
@@ -1477,7 +1742,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 ShowError(central.Error);
                 return false;
             }
-            CentralSessionId = central.SessionId;
+            ApplyCentralSession(central);
         }
 
         await store.OpenCashSessionAsync(UserName, openingAmount);
@@ -1508,7 +1773,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 return false;
             }
             if (central.Queued)
-                LastSaleMessage = central.Message;
+                ShowTransientMessage(central.Message);
         }
         var ok = await store.RegisterCashMovementAsync(UserName, type, amount, description);
         if (!ok)
@@ -1531,7 +1796,7 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
                 return;
             }
             if (central.Queued)
-                LastSaleMessage = central.Message;
+                ShowTransientMessage(central.Message);
         }
         if (await store.AdjustStockAsync(product.Id, delta, UserName, "Ajuste manual desde POS web"))
             await RefreshAsync();
@@ -1702,9 +1967,41 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         {
             Products = fresh;
         }
-        else if (_cart.Count == 0)
+        else
         {
-            TryPatchCatalogStocks(fresh);
+            // Mantener catálogo estable en venta, pero quitar bajas y parchear stock.
+            var freshById = new Dictionary<int, PosProduct>(fresh.Count);
+            foreach (var product in fresh)
+                freshById[product.Id] = product;
+
+            var kept = new List<PosProduct>(Math.Min(Products.Count, fresh.Count));
+            var changed = Products.Count != fresh.Count;
+            foreach (var current in Products)
+            {
+                if (!freshById.TryGetValue(current.Id, out var updated))
+                {
+                    changed = true;
+                    continue;
+                }
+
+                if (updated.Stock != current.Stock ||
+                    updated.Price != current.Price ||
+                    updated.Cost != current.Cost ||
+                    updated.WholesalePrice != current.WholesalePrice ||
+                    !string.Equals(updated.Name, current.Name, StringComparison.Ordinal) ||
+                    !string.Equals(updated.Code, current.Code, StringComparison.Ordinal))
+                {
+                    kept.Add(updated);
+                    changed = true;
+                }
+                else
+                {
+                    kept.Add(current);
+                }
+            }
+
+            if (changed)
+                Products = kept;
         }
 
         if (notifyUi && !ShouldBlockUiRefresh())
@@ -1861,6 +2158,8 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         StopScannerListener();
         _shiftCutoffTimer?.Dispose();
         CancelSaleMessageDismissal();
+        CancelErrorMessageDismissal();
+        CancelShiftNoticeDismissal();
         CancelStockUiRefresh();
     }
 
@@ -2063,19 +2362,99 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         decimal.TryParse(value?.Replace("$", "").Replace(".", "").Replace(",", "."),
             NumberStyles.Any, CultureInfo.InvariantCulture, out var amount) ? amount : 0;
 
-    private void ScheduleSaleMessageDismissal()
+    private void ScheduleShiftNoticeDismissal(int seconds = 3)
     {
-        CancelSaleMessageDismissal();
+        CancelShiftNoticeDismissal();
+        if (string.IsNullOrWhiteSpace(ShiftScheduleNotice))
+            return;
         var cancellation = new CancellationTokenSource();
-        _saleMessageCancellation = cancellation;
-        _ = DismissSaleMessageAsync(cancellation);
+        _shiftNoticeCancellation = cancellation;
+        _ = DismissShiftNoticeAsync(cancellation, seconds);
     }
 
-    private async Task DismissSaleMessageAsync(CancellationTokenSource cancellation)
+    private void CancelShiftNoticeDismissal()
+    {
+        var cts = _shiftNoticeCancellation;
+        _shiftNoticeCancellation = null;
+        if (cts is null)
+            return;
+        try { cts.Cancel(); }
+        catch (ObjectDisposedException) { }
+        finally
+        {
+            try { cts.Dispose(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task DismissShiftNoticeAsync(CancellationTokenSource cancellation, int seconds)
     {
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(10), cancellation.Token);
+            await Task.Delay(TimeSpan.FromSeconds(seconds), cancellation.Token);
+            await RunOnUiAsync(() =>
+            {
+                if (ReferenceEquals(_shiftNoticeCancellation, cancellation))
+                {
+                    ShiftScheduleNotice = string.Empty;
+                    NotifyChanged();
+                }
+                return Task.CompletedTask;
+            });
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (ReferenceEquals(_shiftNoticeCancellation, cancellation))
+                _shiftNoticeCancellation = null;
+            try { cancellation.Dispose(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private void ScheduleSaleMessageDismissal(int seconds = 5)
+    {
+        CancelSaleMessageDismissal();
+        _saleMessageDismissSeconds = seconds <= 0 ? 5 : seconds;
+        var cancellation = new CancellationTokenSource();
+        _saleMessageCancellation = cancellation;
+        _ = DismissSaleMessageAsync(cancellation, _saleMessageDismissSeconds);
+    }
+
+    private void ScheduleErrorMessageDismissal(int seconds = 3)
+    {
+        CancelErrorMessageDismissal();
+        var cancellation = new CancellationTokenSource();
+        _errorMessageCancellation = cancellation;
+        _ = DismissErrorMessageAsync(cancellation, seconds);
+    }
+
+    private void CancelErrorMessageDismissal()
+    {
+        var cts = _errorMessageCancellation;
+        _errorMessageCancellation = null;
+        if (cts is null)
+            return;
+
+        try
+        {
+            cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        finally
+        {
+            try { cts.Dispose(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task DismissSaleMessageAsync(CancellationTokenSource cancellation, int seconds)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds), cancellation.Token);
             await RunOnUiAsync(() =>
             {
                 if (ReferenceEquals(_saleMessageCancellation, cancellation))
@@ -2095,6 +2474,40 @@ public sealed class PosSessionState(LocalPosStore store, HardwareBridgeClient ha
         {
             if (ReferenceEquals(_saleMessageCancellation, cancellation))
                 _saleMessageCancellation = null;
+
+            try
+            {
+                cancellation.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
+
+    private async Task DismissErrorMessageAsync(CancellationTokenSource cancellation, int seconds)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds), cancellation.Token);
+            await RunOnUiAsync(() =>
+            {
+                if (ReferenceEquals(_errorMessageCancellation, cancellation))
+                {
+                    ErrorMessage = null;
+                    NotifyChanged();
+                }
+
+                return Task.CompletedTask;
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            if (ReferenceEquals(_errorMessageCancellation, cancellation))
+                _errorMessageCancellation = null;
 
             try
             {

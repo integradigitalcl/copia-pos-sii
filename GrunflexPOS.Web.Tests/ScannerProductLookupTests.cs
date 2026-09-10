@@ -21,9 +21,9 @@ public sealed class ScannerProductLookupTests : IDisposable
     [Fact]
     public async Task SeededCatalog_ResolvesBarcodeCaseInsensitive()
     {
-        await _store.EnsureCreatedAsync();
+        var product = await TestConfiguration.EnsureSampleProductAsync(_store);
+        var code = product.Code;
         var products = await _store.GetProductsAsync();
-        var code = products.First().Code;
 
         var match = products.FirstOrDefault(x => x.Code.Equals(code.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase));
 

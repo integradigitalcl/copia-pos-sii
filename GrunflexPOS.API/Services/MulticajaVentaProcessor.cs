@@ -92,29 +92,90 @@ public sealed partial class MulticajaVentaProcessor
 
             var ventaId = Guid.NewGuid();
 
-            if (!req.EsConsumoPersonal)
+            var invLines = new List<InventoryLineChange>();
+            foreach (var (line, product) in resolved)
             {
-                var inv = await _inventory.ApplyStockChangesAsync(
-                    new InventoryStockChangeRequest
-                    {
-                        Operation = MulticajaInventoryContextFactory.FromVenta(req),
-                        Lines = resolved.Select(r => new InventoryLineChange
-                        {
-                            ProductId = r.Product.Id,
-                            QuantityDelta = -r.Line.Cantidad
-                        }).ToList(),
-                        MovementType = InventoryMovementType.Sale,
-                        ReferenceType = InventoryReferenceType.Venta,
-                        ReferenceId = ventaId.ToString(),
-                        AllowNegativeStock = false
-                    },
-                    ct);
-
-                if (!inv.Ok)
+                if (line.Componentes is { Count: > 0 })
                 {
-                    await tx.RollbackAsync(ct);
-                    return Fail(inv.ErrorCode ?? "STOCK_INSUFICIENTE", inv.Error ?? "Stock insuficiente.");
+                    var partAfter = new Dictionary<int, int>();
+                    var kitParts = new List<(int ProductId, int QtyPerKit)>();
+                    foreach (var comp in line.Componentes)
+                    {
+                        if (comp.CantidadPorKit <= 0)
+                        {
+                            await tx.RollbackAsync(ct);
+                            return Fail("CANTIDAD_INVALIDA", "Cantidad de componente de promoción inválida.");
+                        }
+
+                        var part = await MulticajaProductoResolve.PorComponenteAsync(_db, comp, ct);
+                        if (part is null)
+                        {
+                            await tx.RollbackAsync(ct);
+                            return Fail("PRODUCTO_NO_ENCONTRADO",
+                                $"Componente de promoción no encontrado: {comp.Producto ?? comp.CodigoBarras}");
+                        }
+
+                        var need = comp.CantidadPorKit * line.Cantidad;
+                        invLines.Add(new InventoryLineChange
+                        {
+                            ProductId = part.Id,
+                            QuantityDelta = -need
+                        });
+                        var before = partAfter.TryGetValue(part.Id, out var projected)
+                            ? projected
+                            : part.Stock;
+                        partAfter[part.Id] = before - need;
+                        kitParts.Add((part.Id, comp.CantidadPorKit));
+                    }
+
+                    // Stock de la promoción = kits restantes tras descontar componentes.
+                    decimal? kits = null;
+                    foreach (var (partId, qtyPerKit) in kitParts)
+                    {
+                        if (!partAfter.TryGetValue(partId, out var after) || qtyPerKit <= 0)
+                            continue;
+                        var available = Math.Floor((decimal)after / qtyPerKit);
+                        kits = kits is null ? available : Math.Min(kits.Value, available);
+                    }
+
+                    var targetKits = (int)Math.Max(0m, kits ?? 0m);
+                    var promoDelta = targetKits - product.Stock;
+                    if (promoDelta != 0)
+                    {
+                        invLines.Add(new InventoryLineChange
+                        {
+                            ProductId = product.Id,
+                            QuantityDelta = promoDelta
+                        });
+                    }
                 }
+                else
+                {
+                    invLines.Add(new InventoryLineChange
+                    {
+                        ProductId = product.Id,
+                        QuantityDelta = -line.Cantidad
+                    });
+                }
+            }
+
+            // Consumo personal también descuenta inventario (sin impacto en caja/total).
+            var inv = await _inventory.ApplyStockChangesAsync(
+                new InventoryStockChangeRequest
+                {
+                    Operation = MulticajaInventoryContextFactory.FromVenta(req),
+                    Lines = invLines,
+                    MovementType = InventoryMovementType.Sale,
+                    ReferenceType = InventoryReferenceType.Venta,
+                    ReferenceId = ventaId.ToString(),
+                    AllowNegativeStock = false
+                },
+                ct);
+
+            if (!inv.Ok)
+            {
+                await tx.RollbackAsync(ct);
+                return Fail(inv.ErrorCode ?? "STOCK_INSUFICIENTE", inv.Error ?? "Stock insuficiente.");
             }
 
             var maxTicket = await _db.Ventas.MaxAsync(v => (int?)v.NumeroTicket, ct) ?? 0;
@@ -158,16 +219,21 @@ public sealed partial class MulticajaVentaProcessor
 
             if (!req.EsConsumoPersonal)
             {
-                sesion.TotalVentas += totalPersist;
-                _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                var cashImpact = MulticajaCashImpact.ForSale(
+                    req.MetodoPago, totalPersist, req.MontoEfectivo);
+                sesion.TotalVentas += cashImpact;
+                if (cashImpact > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    CajaSesionId = sesion.Id,
-                    Fecha = DateTime.UtcNow,
-                    Tipo = "VENTA",
-                    Monto = totalPersist,
-                    Descripcion = $"Venta Ticket #{nextTicket}"
-                });
+                    _db.MovimientosCaja.Add(new CommerceMovimientoCaja
+                    {
+                        Id = Guid.NewGuid(),
+                        CajaSesionId = sesion.Id,
+                        Fecha = DateTime.UtcNow,
+                        Tipo = "VENTA",
+                        Monto = cashImpact,
+                        Descripcion = $"Venta Ticket #{nextTicket}"
+                    });
+                }
             }
 
             await _db.SaveChangesAsync(ct);
